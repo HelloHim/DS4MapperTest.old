@@ -73,11 +73,14 @@ namespace DS4MapperTest.GyroActions
     public struct GyroMouseParams
     {
         public const bool JITTER_COMPENSATION_DEFAULT = true;
-        public const double IN_GAME_SENS_DEFAULT = 1.0;
+        public const double DEAD_ZONE_DEFAULT = 0.2;
+        public const double REAL_WORLD_CALIBRATION_DEFAULT = 45.4545;
+        public const double IN_GAME_SENS_DEFAULT = 0.54;
+        public const double COUNTS_CALIBRATION_DEFAULT = 30303.0303;
         public const GyroMouseAccelCurveChoice ACCEL_CURVE_DEFAULT =
-            GyroMouseAccelCurveChoice.Linear;
-        public const double SENSITIVITY_DEFAULT = 1.0;
-        public const double VERTICAL_SCALE_DEFAULT = 1.0;
+            GyroMouseAccelCurveChoice.None;
+        public const double SENSITIVITY_DEFAULT = 4.0;
+        public const double VERTICAL_SCALE_DEFAULT = 0.6;
         public const double MIN_ACCEL_SENS_DEFAULT = SENSITIVITY_DEFAULT;
         public const double MAX_ACCEL_SENS_DEFAULT = SENSITIVITY_DEFAULT;
         public const double MIN_GYRO_THRESHOLD_DEFAULT = 0.0;
@@ -85,6 +88,10 @@ namespace DS4MapperTest.GyroActions
         public const double POWER_VREF_DEFAULT = 1.0;
         public const double POWER_EXPONENT_DEFAULT = 1.0;
         public const double NATURAL_VHALF_DEFAULT = 20.0;
+        public const bool MULTIPLIER_COMPENSATION_DEFAULT = false;
+        public const double ACCELERATION_MULTIPLIER_DEFAULT = 1.0;
+        public const double VERTICAL_ACCELERATION_MULTIPLIER_DEFAULT = 1.0;
+        public const bool VERTICAL_ACCELERATION_SCALE_MODE_DEFAULT = true;
 
         public double deadzone;
         public double verticalDeadZone;
@@ -114,6 +121,10 @@ namespace DS4MapperTest.GyroActions
         public bool toggleAction;
         public bool smoothing;
         public bool jitterCompensation;
+        public bool multiplierCompensation;
+        public double accelerationMultiplier;
+        public double verticalAccelerationMultiplier;
+        public bool verticalAccelerationScaleMode;
         public SmoothingFilterSettings smoothingFilterSettings;
         //public double oneEuroMinCutoff;
         //public double oneEuroMinBeta;
@@ -152,6 +163,10 @@ namespace DS4MapperTest.GyroActions
             public const string TRIGGER_EVAL_COND = "TriggersEvalCond";
             public const string TOGGLE_ACTION = "ToggleAction";
             public const string JITTER_COMPENSATION = "JitterCompensation";
+            public const string MULTIPLIER_COMPENSATION = "MultiplierCompensation";
+            public const string ACCELERATION_MULTIPLIER = "AccelerationMultiplier";
+            public const string VERTICAL_ACCELERATION_MULTIPLIER = "VerticalAccelerationMultiplier";
+            public const string VERTICAL_ACCELERATION_SCALE_MODE = "VerticalAccelerationScaleMode";
             public const string SMOOTHING_ENABLED = "SmoothingEnabled";
             public const string SMOOTHING_FILTER = "SmoothingFilter";
             //public const string SMOOTHING_MINCUTOFF = "SmoothingMinCutoff";
@@ -189,12 +204,16 @@ namespace DS4MapperTest.GyroActions
             PropertyKeyStrings.TOGGLE_ACTION,
             PropertyKeyStrings.SMOOTHING_ENABLED,
             PropertyKeyStrings.SMOOTHING_FILTER,
+            PropertyKeyStrings.MULTIPLIER_COMPENSATION,
+            PropertyKeyStrings.ACCELERATION_MULTIPLIER,
+            PropertyKeyStrings.VERTICAL_ACCELERATION_MULTIPLIER,
+            PropertyKeyStrings.VERTICAL_ACCELERATION_SCALE_MODE,
             //PropertyKeyStrings.SMOOTHING_MINCUTOFF,
             //PropertyKeyStrings.SMOOTHING_MINBETA,
         };
 
         public const string ACTION_TYPE_NAME = "GyroMouseAction";
-        private const bool DEFAULT_SMOOTHING_ENABLED = true;
+        private const bool DEFAULT_SMOOTHING_ENABLED = false;
 
         private double xMotion;
         private double yMotion;
@@ -211,19 +230,19 @@ namespace DS4MapperTest.GyroActions
             mouseParams = new GyroMouseParams()
             {
                 sensitivity = GyroMouseParams.SENSITIVITY_DEFAULT,
-                deadzone = 0.6,
+                deadzone = GyroMouseParams.DEAD_ZONE_DEFAULT,
                 verticalDeadZone = 0.0,
                 gyroAngleSnapDegrees = 0.0,
                 gyroSmoothAngleSnap = false,
-                realWorldCalibration = 5.00,
+                realWorldCalibration = GyroMouseParams.REAL_WORLD_CALIBRATION_DEFAULT,
                 inGameSens = GyroMouseParams.IN_GAME_SENS_DEFAULT,
                 accelCurve = GyroMouseParams.ACCEL_CURVE_DEFAULT,
                 minGyroThreshold = GyroMouseParams.MIN_GYRO_THRESHOLD_DEFAULT,
                 maxGyroThreshold = GyroMouseParams.MAX_GYRO_THRESHOLD_DEFAULT,
                 minAccelXSens = GyroMouseParams.MIN_ACCEL_SENS_DEFAULT,
-                minAccelYSens = GyroMouseParams.MIN_ACCEL_SENS_DEFAULT,
+                minAccelYSens = GyroMouseParams.VERTICAL_SCALE_DEFAULT,
                 maxAccelXSens = GyroMouseParams.MAX_ACCEL_SENS_DEFAULT,
-                maxAccelYSens = GyroMouseParams.MAX_ACCEL_SENS_DEFAULT,
+                maxAccelYSens = GyroMouseParams.VERTICAL_SCALE_DEFAULT,
                 powerExponent = GyroMouseParams.POWER_EXPONENT_DEFAULT,
                 powerVRef = GyroMouseParams.POWER_VREF_DEFAULT,
                 naturalVHalf = GyroMouseParams.NATURAL_VHALF_DEFAULT,
@@ -236,6 +255,10 @@ namespace DS4MapperTest.GyroActions
                 },
                 jitterCompensation = false,
                 smoothing = DEFAULT_SMOOTHING_ENABLED,
+                multiplierCompensation = GyroMouseParams.MULTIPLIER_COMPENSATION_DEFAULT,
+                accelerationMultiplier = GyroMouseParams.ACCELERATION_MULTIPLIER_DEFAULT,
+                verticalAccelerationMultiplier = GyroMouseParams.VERTICAL_ACCELERATION_MULTIPLIER_DEFAULT,
+                verticalAccelerationScaleMode = GyroMouseParams.VERTICAL_ACCELERATION_SCALE_MODE_DEFAULT,
             };
 
             mouseParams.smoothingFilterSettings = new SmoothingFilterSettings();
@@ -337,7 +360,8 @@ namespace DS4MapperTest.GyroActions
             // Base speed 5 ms
             //double tempDouble = timeElapsed * 3 * 66.67;
             //double tempDouble = timeElapsed * 3 * gyroFrame.elapsedReference;
-            double tempDouble = timeElapsed * gyroFrame.elapsedReference;
+            //double tempDouble = timeElapsed * gyroFrame.elapsedReference;
+            double tempDouble = 1.0;
             int deltaX = mouseParams.useForXAxis == GyroMouseXAxisChoice.Yaw ?
                 gyroFrame.GyroYaw : gyroFrame.GyroRoll;
 
@@ -539,6 +563,15 @@ namespace DS4MapperTest.GyroActions
             //double finalCoefficient = coefficient * sensMulti * modSensMulti;
             double finalCoefficient = coefficient * modSensMultiX;
             double finalCoefficientY = coefficient * modSensMultiY;
+            if (mouseParams.multiplierCompensation)
+            {
+                double accelMultiplier = Math.Clamp(mouseParams.accelerationMultiplier,
+                    0.01, 100.0);
+                double verticalAccelMultiplier = Math.Clamp(
+                    mouseParams.verticalAccelerationMultiplier, 0.01, 100.0);
+                finalCoefficient /= accelMultiplier;
+                finalCoefficientY /= verticalAccelMultiplier;
+            }
 
             xMotion = deltaAngVelX != 0 ? finalCoefficient * (xAng * tempDouble)
                 + (normX * (offset * signX)) : 0;
@@ -821,6 +854,18 @@ namespace DS4MapperTest.GyroActions
                             mouseParams.smoothingFilterSettings = tempMouseAction.mouseParams.smoothingFilterSettings;
                             useParentSmoothingFilter = true;
                             break;
+                        case PropertyKeyStrings.MULTIPLIER_COMPENSATION:
+                            mouseParams.multiplierCompensation = tempMouseAction.mouseParams.multiplierCompensation;
+                            break;
+                        case PropertyKeyStrings.ACCELERATION_MULTIPLIER:
+                            mouseParams.accelerationMultiplier = tempMouseAction.mouseParams.accelerationMultiplier;
+                            break;
+                        case PropertyKeyStrings.VERTICAL_ACCELERATION_MULTIPLIER:
+                            mouseParams.verticalAccelerationMultiplier = tempMouseAction.mouseParams.verticalAccelerationMultiplier;
+                            break;
+                        case PropertyKeyStrings.VERTICAL_ACCELERATION_SCALE_MODE:
+                            mouseParams.verticalAccelerationScaleMode = tempMouseAction.mouseParams.verticalAccelerationScaleMode;
+                            break;
                         //case PropertyKeyStrings.SMOOTHING_MINCUTOFF:
                         //    mouseParams.oneEuroMinCutoff = tempMouseAction.mouseParams.oneEuroMinCutoff;
                         //    updateSmoothing = true;
@@ -956,6 +1001,18 @@ namespace DS4MapperTest.GyroActions
                 case PropertyKeyStrings.SMOOTHING_FILTER:
                     mouseParams.smoothingFilterSettings = tempMouseAction.mouseParams.smoothingFilterSettings;
                     useParentSmoothingFilter = true;
+                    break;
+                case PropertyKeyStrings.MULTIPLIER_COMPENSATION:
+                    mouseParams.multiplierCompensation = tempMouseAction.mouseParams.multiplierCompensation;
+                    break;
+                case PropertyKeyStrings.ACCELERATION_MULTIPLIER:
+                    mouseParams.accelerationMultiplier = tempMouseAction.mouseParams.accelerationMultiplier;
+                    break;
+                case PropertyKeyStrings.VERTICAL_ACCELERATION_MULTIPLIER:
+                    mouseParams.verticalAccelerationMultiplier = tempMouseAction.mouseParams.verticalAccelerationMultiplier;
+                    break;
+                case PropertyKeyStrings.VERTICAL_ACCELERATION_SCALE_MODE:
+                    mouseParams.verticalAccelerationScaleMode = tempMouseAction.mouseParams.verticalAccelerationScaleMode;
                     break;
                 //case PropertyKeyStrings.SMOOTHING_MINCUTOFF:
                 //    mouseParams.oneEuroMinCutoff = tempMouseAction.mouseParams.oneEuroMinCutoff;
