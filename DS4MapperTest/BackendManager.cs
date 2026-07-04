@@ -173,6 +173,8 @@ namespace DS4MapperTest
 
         public void Start()
         {
+            if (isRunning || changingService) return;
+
             LogDebug("Starting service");
             changingService = true;
 
@@ -548,6 +550,8 @@ namespace DS4MapperTest
 
         public void Stop()
         {
+            if (!isRunning || changingService) return;
+
             changingService = true;
             isRunning = false;
 
