@@ -186,6 +186,7 @@ namespace DS4MapperTest
             get;
         }
         protected InputDeviceBase baseDevice;
+        public InputDeviceBase BaseDevice => baseDevice;
 
         protected bool quit = false;
         public bool Quit { get => quit; set => quit = value; }
