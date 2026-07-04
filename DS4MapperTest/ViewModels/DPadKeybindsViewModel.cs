@@ -202,9 +202,11 @@ namespace DS4MapperTest.ViewModels
         public ObservableCollection<DPadDirectionFuncItem> FunctionItems => functionItems;
 
         public bool HasHoldPress => HasFunc<HoldPressFunc>();
+        public bool HasDoublePress => HasFunc<DoublePressFunc>();
         public bool HasStartPress => HasFunc<StartPressFunc>();
         public bool HasReleasePress => HasFunc<ReleaseFunc>();
         public bool CanAddHoldPress => !HasHoldPress;
+        public bool CanAddDoublePress => !HasDoublePress;
         public bool CanAddStartPress => !HasStartPress;
         public bool CanAddReleasePress => !HasReleasePress;
 
@@ -242,6 +244,9 @@ namespace DS4MapperTest.ViewModels
                     {
                         case HoldPressFunc:
                             functionItems.Add(new DPadDirectionFuncItem(this, FaceBindingFuncKind.Hold));
+                            break;
+                        case DoublePressFunc:
+                            functionItems.Add(new DPadDirectionFuncItem(this, FaceBindingFuncKind.Double));
                             break;
                         case StartPressFunc:
                             functionItems.Add(new DPadDirectionFuncItem(this, FaceBindingFuncKind.Start));
@@ -327,6 +332,7 @@ namespace DS4MapperTest.ViewModels
             return kind switch
             {
                 FaceBindingFuncKind.Hold => HasHoldPress,
+                FaceBindingFuncKind.Double => HasDoublePress,
                 FaceBindingFuncKind.Start => HasStartPress,
                 FaceBindingFuncKind.Release => HasReleasePress,
                 _ => false,
@@ -348,6 +354,7 @@ namespace DS4MapperTest.ViewModels
             {
                 FaceBindingFuncKind.Regular => new NormalPressFunc(emptyOutput),
                 FaceBindingFuncKind.Hold => CreateOutputFunc(new HoldPressFunc(), emptyOutput),
+                FaceBindingFuncKind.Double => CreateOutputFunc(new DoublePressFunc(), emptyOutput),
                 FaceBindingFuncKind.Start => CreateOutputFunc(new StartPressFunc(), emptyOutput),
                 FaceBindingFuncKind.Release => CreateOutputFunc(new ReleaseFunc(), emptyOutput),
                 _ => null,
@@ -372,9 +379,11 @@ namespace DS4MapperTest.ViewModels
         private void RaiseAvailabilityChanged()
         {
             OnPropertyChanged(nameof(HasHoldPress));
+            OnPropertyChanged(nameof(HasDoublePress));
             OnPropertyChanged(nameof(HasStartPress));
             OnPropertyChanged(nameof(HasReleasePress));
             OnPropertyChanged(nameof(CanAddHoldPress));
+            OnPropertyChanged(nameof(CanAddDoublePress));
             OnPropertyChanged(nameof(CanAddStartPress));
             OnPropertyChanged(nameof(CanAddReleasePress));
         }
@@ -399,7 +408,7 @@ namespace DS4MapperTest.ViewModels
         public bool IsExtraBinding => Kind != FaceBindingFuncKind.Regular && Func != null;
         public bool CanRemove => IsExtraBinding;
         public bool IsTurboEnabled => SupportsTurbo && TurboEnabled;
-        public bool SupportsToggle => Func is NormalPressFunc || Func is HoldPressFunc || Func is StartPressFunc || Func is ReleaseFunc;
+        public bool SupportsToggle => Func is NormalPressFunc || Func is HoldPressFunc || Func is DoublePressFunc || Func is StartPressFunc || Func is ReleaseFunc;
         public bool SupportsTurbo => Func is NormalPressFunc || Func is HoldPressFunc;
         public bool SupportsFireDelay => Func is NormalPressFunc;
         public bool SupportsHoldTime => Func is HoldPressFunc;
@@ -409,6 +418,7 @@ namespace DS4MapperTest.ViewModels
         {
             FaceBindingFuncKind.Regular => "Regular Press",
             FaceBindingFuncKind.Hold => "Hold Press",
+            FaceBindingFuncKind.Double => "Double Press",
             FaceBindingFuncKind.Start => "Start Press",
             FaceBindingFuncKind.Release => "Release Press",
             _ => "Binding",
@@ -636,6 +646,7 @@ namespace DS4MapperTest.ViewModels
             {
                 FaceBindingFuncKind.Regular => action.ActionFuncs.OfType<NormalPressFunc>().FirstOrDefault(),
                 FaceBindingFuncKind.Hold => action.ActionFuncs.OfType<HoldPressFunc>().FirstOrDefault(),
+                FaceBindingFuncKind.Double => action.ActionFuncs.OfType<DoublePressFunc>().FirstOrDefault(),
                 FaceBindingFuncKind.Start => action.ActionFuncs.OfType<StartPressFunc>().FirstOrDefault(),
                 FaceBindingFuncKind.Release => action.ActionFuncs.OfType<ReleaseFunc>().FirstOrDefault(),
                 _ => null,
