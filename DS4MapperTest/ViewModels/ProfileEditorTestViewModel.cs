@@ -1772,10 +1772,10 @@ namespace DS4MapperTest.ViewModels
                     TouchpadNoAction => "No touchpad output is assigned.",
                     TouchpadSingleButton => "Button binding settings are available below.",
                     TouchpadMouse => "Movement settings are available in Mouse & Movement. Trackball settings are available in Trackball & Scroll.",
-                    TouchpadAbsAction => "Absolute movement settings are available in Mouse & Movement.",
-                    TouchpadMouseJoystick => "Mouse-like joystick settings are available in Mouse & Movement.",
-                    TouchpadStickAction => "Joystick movement settings are available in Mouse & Movement.",
-                    TouchpadActionPad => "Zone settings are available in Zones & Gestures.",
+                    TouchpadAbsAction => "Absolute movement settings are available in Mouse & Movement. Outer ring and release settings are available in Advanced.",
+                    TouchpadMouseJoystick => "Mouse-like joystick settings are available in Mouse & Movement. Trackball settings are available in Trackball & Scroll.",
+                    TouchpadStickAction => "Joystick movement settings are available in Mouse & Movement. Outer ring settings are available in Advanced.",
+                    TouchpadActionPad => "Zone settings are available in Zones & Gestures. Outer ring settings are available in Advanced.",
                     TouchpadDirectionalSwipe => "Gesture settings are available in Zones & Gestures.",
                     TouchpadCircular => "Scroll settings are available in Trackball & Scroll.",
                     TouchpadFlickStick => "Flick stick settings are available in Mouse & Movement.",
@@ -1797,9 +1797,13 @@ namespace DS4MapperTest.ViewModels
 
         public bool IsTrackballScrollAction =>
             mappedAction is TouchpadMouse ||
+            mappedAction is TouchpadMouseJoystick ||
             mappedAction is TouchpadCircular;
 
-        public bool IsAdvancedAction => false;
+        public bool IsAdvancedAction =>
+            mappedAction is TouchpadAbsAction ||
+            mappedAction is TouchpadActionPad ||
+            mappedAction is TouchpadStickAction;
 
         public bool IsUnbound => mappedAction is TouchpadNoAction;
 
