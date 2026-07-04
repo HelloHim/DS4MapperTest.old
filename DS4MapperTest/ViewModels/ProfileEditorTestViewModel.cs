@@ -100,12 +100,6 @@ namespace DS4MapperTest.ViewModels
         private GyroCalibrationViewModel gyroCalibVM;
         public GyroCalibrationViewModel GyroCalibVM => gyroCalibVM ??= new GyroCalibrationViewModel(mapper);
 
-        private GyroSensitivityViewModel gyroSensitivityVM;
-        public GyroSensitivityViewModel GyroSensitivityVM => gyroSensitivityVM ??= new GyroSensitivityViewModel(mapper);
-
-        private GyroNoiseSteadyingViewModel gyroNoiseSteadyingVM;
-        public GyroNoiseSteadyingViewModel GyroNoiseSteadyingVM => gyroNoiseSteadyingVM ??= new GyroNoiseSteadyingViewModel(mapper);
-
         private ObservableCollection<TriggerKeybindItem> triggerKeybinds =
             new ObservableCollection<TriggerKeybindItem>();
         public ObservableCollection<TriggerKeybindItem> TriggerKeybinds => triggerKeybinds;
@@ -2160,6 +2154,10 @@ namespace DS4MapperTest.ViewModels
 
         public bool IsUnbound => mappedAction is GyroNoMapAction;
 
+        public bool IsGyroMouseAction => mappedAction is GyroMouse;
+        public bool IsGyroMouseJoystickAction => mappedAction is GyroMouseJoystick;
+        public bool IsGyroDirSwipeAction => mappedAction is GyroDirectionalSwipe;
+
         private Mapper mapper;
         public Mapper Mapper
         {
@@ -2189,6 +2187,9 @@ namespace DS4MapperTest.ViewModels
             OnPropertyChanged(nameof(ActionDisplayName));
             OnPropertyChanged(nameof(BindingStatus));
             OnPropertyChanged(nameof(IsUnbound));
+            OnPropertyChanged(nameof(IsGyroMouseAction));
+            OnPropertyChanged(nameof(IsGyroMouseJoystickAction));
+            OnPropertyChanged(nameof(IsGyroDirSwipeAction));
         }
 
         private void OnPropertyChanged(string name)
