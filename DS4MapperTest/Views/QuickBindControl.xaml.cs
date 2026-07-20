@@ -74,6 +74,7 @@ namespace DS4MapperTest.Views
         private void Window_Deactivated(object sender, EventArgs e)
         {
             if (listening) CancelCapture();
+            ConfirmPopup.IsOpen = false;
         }
 
         private void QuickBindControl_LostMouseCapture(object sender, MouseEventArgs e)
@@ -110,6 +111,7 @@ namespace DS4MapperTest.Views
 
         private void StartListening()
         {
+            ConfirmPopup.IsOpen = false;
             listening = true;
 
             BindButton.Content = "Press a key…";
@@ -121,7 +123,6 @@ namespace DS4MapperTest.Views
             AdvancedButton.IsEnabled = false;
 
             Keyboard.Focus(BindButton);
-            Mouse.Capture(this);
         }
 
         private void EndListening()
@@ -270,6 +271,7 @@ namespace DS4MapperTest.Views
 
         private void OpenAdvancedEditor()
         {
+            ConfirmPopup.IsOpen = false;
             IQuickBindTarget target = Target;
             if (target == null) return;
 
@@ -365,8 +367,6 @@ namespace DS4MapperTest.Views
 
         private void ConfirmPopup_Closed(object sender, EventArgs e)
         {
-            // Popup auto-closes on outside click (StaysOpen=False); treat that
-            // the same as an explicit Cancel so nothing is applied.
             pendingKind = PendingKind.None;
         }
     }

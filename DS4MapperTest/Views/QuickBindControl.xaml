@@ -38,7 +38,7 @@
         <Popup x:Name="ConfirmPopup"
                PlacementTarget="{Binding ElementName=BindButton}"
                Placement="Bottom"
-               StaysOpen="False"
+               StaysOpen="True"
                AllowsTransparency="True"
                Closed="ConfirmPopup_Closed">
             <Border Style="{StaticResource JsmccPanelBorder}" MaxWidth="260">
