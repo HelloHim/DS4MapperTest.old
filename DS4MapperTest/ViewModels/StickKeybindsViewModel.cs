@@ -30,10 +30,11 @@ namespace DS4MapperTest.ViewModels
             new StickModeItem("Unbound", 0),
             new StickModeItem("Stick", 1),
             new StickModeItem("DPad", 2),
+            new StickModeItem("Analog Emulation", 7),
             new StickModeItem("Mouse", 3),
+            new StickModeItem("Flick Stick", 6),
             new StickModeItem("Circular", 4),
             new StickModeItem("Absolute Mouse", 5),
-            new StickModeItem("Flick Stick", 6),
         };
 
         // The original Steam Controller registers its single stick as "Stick";
@@ -98,7 +99,8 @@ namespace DS4MapperTest.ViewModels
             }
         }
 
-        public bool IsPadMode => settingsViewModel is StickPadActionPropViewModel;
+        public bool IsPadMode => settingsViewModel is StickPadActionPropViewModel ||
+            settingsViewModel is StickAnalogEmulationPropViewModel;
 
         public string CurrentModeDisplayName =>
             selectedModeIndex >= 0 && selectedModeIndex < sharedModeItems.Count
@@ -155,6 +157,7 @@ namespace DS4MapperTest.ViewModels
                 StickCircular => 4,
                 StickAbsMouse => 5,
                 StickFlickStick => 6,
+                StickAnalogEmulationAction => 7,
                 _ => 0,
             };
         }
@@ -169,6 +172,7 @@ namespace DS4MapperTest.ViewModels
             if (newAction == null) return;
 
             newAction.CopyBaseMapProps(oldAction);
+            CarryOverSharedDigitalDirectionSettings(oldAction, newAction);
             editVM.MigrateActionId(newAction);
             editVM.SwitchAction(newAction);
 
@@ -176,6 +180,67 @@ namespace DS4MapperTest.ViewModels
 
             RebuildSettingsViewModel();
             RebuildExtraBindings();
+        }
+
+        // DPad and Analog Emulation both use the same four Up/Down/Left/Right bindings and
+        // the same Digital Release Brake settings. Switching between them shouldn't wipe
+        // those out just because the rest of the mode's settings differ.
+        private static void CarryOverSharedDigitalDirectionSettings(StickMapAction oldAction, StickMapAction newAction)
+        {
+            AxisDirButton[] oldDirs = null;
+            StickReleaseBrake oldBrake = null;
+
+            if (oldAction is StickPadAction oldPad)
+            {
+                oldDirs = new AxisDirButton[4]
+                {
+                    oldPad.EventCodes4[(int)StickPadAction.DpadDirections.Up],
+                    oldPad.EventCodes4[(int)StickPadAction.DpadDirections.Down],
+                    oldPad.EventCodes4[(int)StickPadAction.DpadDirections.Left],
+                    oldPad.EventCodes4[(int)StickPadAction.DpadDirections.Right],
+                };
+                oldBrake = oldPad.ReleaseBrake;
+            }
+            else if (oldAction is StickAnalogEmulationAction oldAnalog)
+            {
+                oldDirs = new AxisDirButton[4]
+                {
+                    oldAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Up],
+                    oldAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Down],
+                    oldAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Left],
+                    oldAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Right],
+                };
+                oldBrake = oldAnalog.ReleaseBrake;
+            }
+
+            if (oldDirs == null) return;
+
+            if (newAction is StickPadAction newPad)
+            {
+                newPad.EventCodes4[(int)StickPadAction.DpadDirections.Up] = oldDirs[0];
+                newPad.EventCodes4[(int)StickPadAction.DpadDirections.Down] = oldDirs[1];
+                newPad.EventCodes4[(int)StickPadAction.DpadDirections.Left] = oldDirs[2];
+                newPad.EventCodes4[(int)StickPadAction.DpadDirections.Right] = oldDirs[3];
+                CopyBrakeSettings(oldBrake, newPad.ReleaseBrake);
+            }
+            else if (newAction is StickAnalogEmulationAction newAnalog)
+            {
+                newAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Up] = oldDirs[0];
+                newAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Down] = oldDirs[1];
+                newAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Left] = oldDirs[2];
+                newAnalog.DirButtons[(int)StickAnalogEmulationAction.DirSlot.Right] = oldDirs[3];
+                CopyBrakeSettings(oldBrake, newAnalog.ReleaseBrake);
+            }
+        }
+
+        private static void CopyBrakeSettings(StickReleaseBrake src, StickReleaseBrake dst)
+        {
+            if (src == null || dst == null) return;
+
+            dst.Enabled = src.Enabled;
+            dst.BrakeDurationMs = src.BrakeDurationMs;
+            dst.MinimumHoldMs = src.MinimumHoldMs;
+            dst.ArmingThreshold = src.ArmingThreshold;
         }
 
         private void RebuildSettingsViewModel()
@@ -195,6 +260,7 @@ namespace DS4MapperTest.ViewModels
                 StickCircular => new StickCircularPropViewModel(owner.DeviceMapper, action),
                 StickAbsMouse => new StickAbsMousePropViewModel(owner.DeviceMapper, action),
                 StickFlickStick => new StickFlickStickPropViewModel(owner.DeviceMapper, action),
+                StickAnalogEmulationAction => new StickAnalogEmulationPropViewModel(owner.DeviceMapper, action),
                 _ => (object)new StickNoActionPropViewModel(),
             };
 
@@ -249,6 +315,12 @@ namespace DS4MapperTest.ViewModels
                 case StickAbsMouse:
                     extraBindings.Add(new StickExtraBindingItem(this, "Ring", "Ring / Outer Ring"));
                     break;
+                case StickAnalogEmulationAction:
+                    extraBindings.Add(new StickExtraBindingItem(this, "Up", "Up"));
+                    extraBindings.Add(new StickExtraBindingItem(this, "Down", "Down"));
+                    extraBindings.Add(new StickExtraBindingItem(this, "Left", "Left"));
+                    extraBindings.Add(new StickExtraBindingItem(this, "Right", "Right"));
+                    break;
                 default:
                     break;
             }
@@ -264,6 +336,7 @@ namespace DS4MapperTest.ViewModels
                 StickCircular circ when slotKey == "CW" => circ.ClockWiseBtn,
                 StickCircular circ when slotKey == "CCW" => circ.CounterClockwiseBtn,
                 StickAbsMouse abs when slotKey == "Ring" => abs.RingButton,
+                StickAnalogEmulationAction analog when TryAnalogDirIndex(slotKey, out int aidx) => analog.DirButtons[aidx],
                 _ => null,
             };
         }
@@ -280,6 +353,8 @@ namespace DS4MapperTest.ViewModels
                     return EnsureCircularButton(circ, false);
                 case StickAbsMouse abs when slotKey == "Ring":
                     return EnsureAbsMouseRingButton(abs);
+                case StickAnalogEmulationAction analog when TryAnalogDirIndex(slotKey, out int aidx):
+                    return EnsureAnalogDirButton(analog, aidx);
                 default:
                     return null;
             }
@@ -366,6 +441,53 @@ namespace DS4MapperTest.ViewModels
             StickAbsMousePropViewModel propVm = settingsViewModel as StickAbsMousePropViewModel;
             propVm?.UpdateRingButton(existing, newButton);
             return newButton;
+        }
+
+        private ButtonAction EnsureAnalogDirButton(StickAnalogEmulationAction analog, int idx)
+        {
+            AxisDirButton existing = analog.DirButtons[idx];
+            bool usingParent = analog.UsingParentActionButton[idx];
+            if (!usingParent && HasNormalPressFunc(existing)) return existing;
+
+            AxisDirButton newButton = new AxisDirButton();
+            if (existing != null)
+            {
+                newButton.CopyBaseProps(existing);
+                newButton.CopyAction(existing);
+            }
+            EnsureRegularPressFunc(newButton);
+
+            StickAnalogEmulationPropViewModel propVm = settingsViewModel as StickAnalogEmulationPropViewModel;
+            Action<ButtonAction, ButtonAction> updater = GetAnalogUpdater(propVm, idx);
+            updater?.Invoke(existing, newButton);
+            return newButton;
+        }
+
+        private static Action<ButtonAction, ButtonAction> GetAnalogUpdater(StickAnalogEmulationPropViewModel propVm, int idx)
+        {
+            if (propVm == null) return null;
+            return (StickAnalogEmulationAction.DirSlot)idx switch
+            {
+                StickAnalogEmulationAction.DirSlot.Up => propVm.UpdateUpDirAction,
+                StickAnalogEmulationAction.DirSlot.Down => propVm.UpdateDownDirAction,
+                StickAnalogEmulationAction.DirSlot.Left => propVm.UpdateLeftDirAction,
+                StickAnalogEmulationAction.DirSlot.Right => propVm.UpdateRightDirAction,
+                _ => null,
+            };
+        }
+
+        private static bool TryAnalogDirIndex(string slotKey, out int index)
+        {
+            index = slotKey switch
+            {
+                "Up" => (int)StickAnalogEmulationAction.DirSlot.Up,
+                "Down" => (int)StickAnalogEmulationAction.DirSlot.Down,
+                "Left" => (int)StickAnalogEmulationAction.DirSlot.Left,
+                "Right" => (int)StickAnalogEmulationAction.DirSlot.Right,
+                _ => -1,
+            };
+
+            return index >= 0;
         }
 
         private static bool TryDirIndex(string slotKey, out int index)
