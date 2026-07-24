@@ -6,6 +6,7 @@ using System.Linq;
 using DS4MapperTest.ActionUtil;
 using DS4MapperTest.ButtonActions;
 using DS4MapperTest.MapperUtil;
+using DS4MapperTest.TriggerActions;
 
 namespace DS4MapperTest.ViewModels
 {
@@ -18,12 +19,18 @@ namespace DS4MapperTest.ViewModels
         Chorded,
         Start,
         Release,
+        // Permanent activators for a pressure-capable touchpad click binding
+        // (Steam Controller 2). Replace Regular for that binding only - every
+        // other binding category never constructs these kinds.
+        SoftPress,
+        FullPress,
     }
 
     public class FaceButtonBindingItem : INotifyPropertyChanged
     {
         private readonly ProfileEditorTestViewModel owner;
         private ButtonMapAction mappedAction;
+        private readonly bool isTouchpadPressureCapable;
         private readonly ObservableCollection<FaceButtonFuncItem> functionItems =
             new ObservableCollection<FaceButtonFuncItem>();
 
@@ -60,14 +67,175 @@ namespace DS4MapperTest.ViewModels
         public bool CanAddStartPress => !HasStartPress;
         public bool CanAddReleasePress => !HasReleasePress;
 
+        // True for a Steam Controller 2 touchpad click binding, set at construction time
+        // (ProfileEditorTestViewModel.AddTouchpadButtonBinding) based on device type and
+        // binding name - NOT derived solely from the current action's runtime type, since a
+        // fresh/never-edited binding is still a plain ButtonNoAction and Soft Press/Full Press
+        // must appear (permanently, unbound) from the very first render, not just after the
+        // action gets lazily upgraded on first edit. Drives the Activation Style panel and the
+        // Soft Press/Full Press row layout in SharedButtonKeybindsControl.
+        public bool IsTouchpadPressureBinding =>
+            isTouchpadPressureCapable || mappedAction is TouchpadPressureDualStageAction;
+
+        private TouchpadPressureDualStageAction TouchPressureAction =>
+            mappedAction as TouchpadPressureDualStageAction;
+
+        public TriggerDualStageAction.DualStageMode ActivationStyle
+        {
+            get => TouchPressureAction?.ActivationStyle ?? TriggerDualStageAction.DualStageMode.Threshold;
+            set
+            {
+                TouchpadPressureDualStageAction action = owner.EnsureEditableTouchpadPressureAction(this);
+                if (action == null || action.ActivationStyle == value) return;
+                action.ActivationStyle = value;
+                OnPropertyChanged(nameof(ActivationStyle));
+            }
+        }
+
+        public int SoftPressThreshold
+        {
+            get => TouchPressureAction?.SoftPressThreshold ?? TouchpadPressureDualStageAction.DEFAULT_SOFT_THRESHOLD;
+            set
+            {
+                TouchpadPressureDualStageAction action = owner.EnsureEditableTouchpadPressureAction(this);
+                if (action == null) return;
+                action.SoftPressThreshold = value;
+                OnPropertyChanged(nameof(SoftPressThreshold));
+                OnPropertyChanged(nameof(SoftPressThresholdText));
+                OnPropertyChanged(nameof(FullPressThreshold));
+                OnPropertyChanged(nameof(FullPressThresholdText));
+            }
+        }
+
+        public int FullPressThreshold
+        {
+            get => TouchPressureAction?.FullPressThreshold ?? TouchpadPressureDualStageAction.DEFAULT_FULL_THRESHOLD;
+            set
+            {
+                TouchpadPressureDualStageAction action = owner.EnsureEditableTouchpadPressureAction(this);
+                if (action == null) return;
+                action.FullPressThreshold = value;
+                OnPropertyChanged(nameof(FullPressThreshold));
+                OnPropertyChanged(nameof(FullPressThresholdText));
+                OnPropertyChanged(nameof(SoftPressThreshold));
+                OnPropertyChanged(nameof(SoftPressThresholdText));
+            }
+        }
+
+        // String-formatted (thousands separator, e.g. "13,096") mirrors of the two threshold
+        // properties above, for direct TextBox entry per the UI requirement that large
+        // threshold values display with a separator. Parsing tolerates a typed/pasted
+        // separator; the underlying model setter still clamps to 0-32767 and maintains the
+        // Soft < Full invariant.
+        public string SoftPressThresholdText
+        {
+            get => SoftPressThreshold.ToString("N0");
+            set
+            {
+                if (TryParseThreshold(value, out int temp)) SoftPressThreshold = temp;
+            }
+        }
+
+        public string FullPressThresholdText
+        {
+            get => FullPressThreshold.ToString("N0");
+            set
+            {
+                if (TryParseThreshold(value, out int temp)) FullPressThreshold = temp;
+            }
+        }
+
+        private static bool TryParseThreshold(string value, out int result)
+        {
+            return int.TryParse(value,
+                System.Globalization.NumberStyles.Integer | System.Globalization.NumberStyles.AllowThousands,
+                System.Globalization.CultureInfo.CurrentCulture, out result);
+        }
+
+        public int HipFireDelayMs
+        {
+            get => TouchPressureAction?.HipFireDelayMs ?? TouchpadPressureDualStageAction.DEFAULT_HIPFIRE_DELAY_MS;
+            set
+            {
+                TouchpadPressureDualStageAction action = owner.EnsureEditableTouchpadPressureAction(this);
+                if (action == null) return;
+                action.HipFireDelayMs = value;
+                OnPropertyChanged(nameof(HipFireDelayMs));
+            }
+        }
+
+        public bool ForceHipFireDelay
+        {
+            get => TouchPressureAction?.ForceHipFireDelay ?? false;
+            set
+            {
+                TouchpadPressureDualStageAction action = owner.EnsureEditableTouchpadPressureAction(this);
+                if (action == null) return;
+                action.ForceHipFireDelay = value;
+                OnPropertyChanged(nameof(ForceHipFireDelay));
+            }
+        }
+
+        public List<ActivationStyleChoice> ActivationStyleItems { get; } =
+            new List<ActivationStyleChoice>
+            {
+                new ActivationStyleChoice("Threshold", TriggerDualStageAction.DualStageMode.Threshold),
+                new ActivationStyleChoice("Exclusive Buttons", TriggerDualStageAction.DualStageMode.ExclusiveButtons),
+                new ActivationStyleChoice("Hair Trigger", TriggerDualStageAction.DualStageMode.HairTrigger),
+                new ActivationStyleChoice("Hip Fire", TriggerDualStageAction.DualStageMode.HipFire),
+                new ActivationStyleChoice("Hip Fire Exclusive Buttons", TriggerDualStageAction.DualStageMode.HipFireExclusiveButtons),
+            };
+
+        // Resolves the ButtonAction that actually owns a given activator kind's ActionFuncs.
+        // For every existing binding type this is unchanged (the top-level ButtonAction).
+        // For a touchpad pressure binding, Soft Press owns its own sub-button while Full
+        // Press and every optional activator (Hold/Double/etc.) live on the Full Press
+        // sub-button - Full Press is the migrated successor of the old Regular Press button,
+        // so anything that used to attach to Regular Press now attaches there.
+        internal ButtonAction ResolveHostButtonAction(FaceBindingFuncKind kind)
+        {
+            if (IsTouchpadPressureBinding)
+            {
+                TouchpadPressureDualStageAction touchAction = mappedAction as TouchpadPressureDualStageAction;
+                if (touchAction == null) return null;
+
+                return kind == FaceBindingFuncKind.SoftPress ?
+                    touchAction.SoftPressActButton : touchAction.FullPressActButton;
+            }
+
+            return mappedAction as ButtonAction;
+        }
+
+        // Same resolution as ResolveHostButtonAction, but clones the binding into the
+        // current layer first (copy-on-write) so edits never land on a shared/inherited
+        // default-layer object. Mirrors EnsureEditableFaceButtonAction for the plain
+        // ButtonAction case. Uses IsTouchpadPressureBinding (not a type check on mappedAction)
+        // so this still routes correctly the very first time a never-edited Soft/Full Press
+        // row is opened, while mappedAction is still ButtonNoAction.
+        internal ButtonAction EnsureEditableHostButtonAction(FaceBindingFuncKind kind)
+        {
+            if (IsTouchpadPressureBinding)
+            {
+                TouchpadPressureDualStageAction action = owner.EnsureEditableTouchpadPressureAction(this);
+                if (action == null) return null;
+
+                return kind == FaceBindingFuncKind.SoftPress ?
+                    action.SoftPressActButton : action.FullPressActButton;
+            }
+
+            return owner.EnsureEditableFaceButtonAction(this);
+        }
+
         public FaceButtonBindingItem(ProfileEditorTestViewModel owner,
-            BindingItemsTest sourceItem, string displayName, string subtitle = null)
+            BindingItemsTest sourceItem, string displayName, string subtitle = null,
+            bool isTouchpadPressureCapable = false)
         {
             this.owner = owner;
             BindingName = sourceItem.BindingName;
             DisplayName = displayName;
             Subtitle = subtitle;
             mappedAction = sourceItem.MappedAction;
+            this.isTouchpadPressureCapable = isTouchpadPressureCapable;
 
             RefreshFunctions();
         }
@@ -81,6 +249,47 @@ namespace DS4MapperTest.ViewModels
         public void RefreshFunctions()
         {
             functionItems.Clear();
+
+            if (IsTouchpadPressureBinding)
+            {
+                TouchpadPressureDualStageAction touchAction = mappedAction as TouchpadPressureDualStageAction;
+
+                ActionFunc softFunc = touchAction?.SoftPressActButton.ActionFuncs
+                    .OfType<NormalPressFunc>().FirstOrDefault();
+                functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.SoftPress, softFunc));
+
+                ActionFunc fullFunc = touchAction?.FullPressActButton.ActionFuncs
+                    .OfType<NormalPressFunc>().FirstOrDefault();
+                functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.FullPress, fullFunc));
+
+                foreach (ActionFunc func in touchAction?.FullPressActButton.ActionFuncs ?? Enumerable.Empty<ActionFunc>())
+                {
+                    switch (func)
+                    {
+                        case HoldPressFunc:
+                            functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.Hold, func));
+                            break;
+                        case DoublePressFunc:
+                            functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.Double, func));
+                            break;
+                        case DistanceFunc:
+                            functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.Distance, func));
+                            break;
+                        case ChordedPressFunc:
+                            functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.Chorded, func));
+                            break;
+                        case StartPressFunc:
+                            functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.Start, func));
+                            break;
+                        case ReleaseFunc:
+                            functionItems.Add(new FaceButtonFuncItem(this, FaceBindingFuncKind.Release, func));
+                            break;
+                    }
+                }
+
+                RaiseAvailabilityChanged();
+                return;
+            }
 
             ButtonAction buttonAction = mappedAction as ButtonAction;
             ActionFunc regularFunc = buttonAction?.ActionFuncs.OfType<NormalPressFunc>().FirstOrDefault();
@@ -119,10 +328,12 @@ namespace DS4MapperTest.ViewModels
 
         public FaceButtonFuncItem AddExtraBinding(FaceBindingFuncKind kind)
         {
-            if (kind == FaceBindingFuncKind.Regular || HasKind(kind)) return null;
+            if (kind == FaceBindingFuncKind.Regular || kind == FaceBindingFuncKind.SoftPress ||
+                kind == FaceBindingFuncKind.FullPress || HasKind(kind)) return null;
 
-            ButtonAction buttonAction = owner.EnsureEditableFaceButtonAction(this);
-            ActionFunc func = CreateFunc(kind);
+            ButtonAction buttonAction = EnsureEditableHostButtonAction(kind);
+            if (buttonAction == null) return null;
+            ActionFunc func = CreateFuncForKind(kind);
             if (func == null) return null;
 
             owner.DeviceMapper.ProcessMappingChangeAction(() =>
@@ -138,9 +349,12 @@ namespace DS4MapperTest.ViewModels
 
         public void RemoveBinding(FaceButtonFuncItem item)
         {
-            if (item == null || item.Kind == FaceBindingFuncKind.Regular || item.Func == null) return;
+            if (item == null || item.Kind == FaceBindingFuncKind.Regular ||
+                item.Kind == FaceBindingFuncKind.SoftPress || item.Kind == FaceBindingFuncKind.FullPress ||
+                item.Func == null) return;
 
-            ButtonAction buttonAction = owner.EnsureEditableFaceButtonAction(this);
+            ButtonAction buttonAction = EnsureEditableHostButtonAction(item.Kind);
+            if (buttonAction == null) return;
             ActionFunc func = item.ResolveCurrentFunc(buttonAction);
             int index = buttonAction.ActionFuncs.IndexOf(func);
             if (index < 0) return;
@@ -159,12 +373,13 @@ namespace DS4MapperTest.ViewModels
         {
             if (item == null) return null;
 
-            ButtonAction buttonAction = owner.EnsureEditableFaceButtonAction(this);
+            ButtonAction buttonAction = EnsureEditableHostButtonAction(item.Kind);
+            if (buttonAction == null) return null;
             ActionFunc func = item.ResolveCurrentFunc(buttonAction);
 
             if (func == null)
             {
-                func = CreateFunc(item.Kind);
+                func = CreateFuncForKind(item.Kind);
                 owner.DeviceMapper.ProcessMappingChangeAction(() =>
                 {
                     buttonAction.Release(owner.DeviceMapper, ignoreReleaseActions: true);
@@ -199,11 +414,13 @@ namespace DS4MapperTest.ViewModels
 
         private bool HasFunc<TFunc>() where TFunc : ActionFunc
         {
-            return mappedAction is ButtonAction buttonAction &&
-                buttonAction.ActionFuncs.OfType<TFunc>().Any();
+            ButtonAction hostAction = IsTouchpadPressureBinding ?
+                (mappedAction as TouchpadPressureDualStageAction)?.FullPressActButton :
+                mappedAction as ButtonAction;
+            return hostAction != null && hostAction.ActionFuncs.OfType<TFunc>().Any();
         }
 
-        private static ActionFunc CreateFunc(FaceBindingFuncKind kind)
+        internal static ActionFunc CreateFuncForKind(FaceBindingFuncKind kind)
         {
             OutputActionData emptyOutput =
                 new OutputActionData(OutputActionData.ActionType.Empty, 0);
@@ -211,6 +428,8 @@ namespace DS4MapperTest.ViewModels
             return kind switch
             {
                 FaceBindingFuncKind.Regular => new NormalPressFunc(emptyOutput),
+                FaceBindingFuncKind.SoftPress => new NormalPressFunc(emptyOutput),
+                FaceBindingFuncKind.FullPress => new NormalPressFunc(emptyOutput),
                 FaceBindingFuncKind.Hold => CreateOutputFunc(new HoldPressFunc(), emptyOutput),
                 FaceBindingFuncKind.Double => CreateOutputFunc(new DoublePressFunc()
                 {
@@ -261,17 +480,22 @@ namespace DS4MapperTest.ViewModels
         }
     }
 
-    public class FaceButtonFuncItem : INotifyPropertyChanged, IQuickBindTarget
+    public class FaceButtonFuncItem : INotifyPropertyChanged, IQuickBindTarget,
+        IActionOutputListOwner
     {
         private readonly FaceButtonBindingItem owner;
         private readonly ActionFunc func;
+        private readonly ObservableCollection<ActionOutputItem> outputItems =
+            new ObservableCollection<ActionOutputItem>();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         public FaceButtonBindingItem Owner => owner;
         public FaceBindingFuncKind Kind { get; }
         public ActionFunc Func => func;
-        public bool IsExtraBinding => Kind != FaceBindingFuncKind.Regular && func != null;
+        public ObservableCollection<ActionOutputItem> OutputItems => outputItems;
+        public bool IsExtraBinding => Kind != FaceBindingFuncKind.Regular &&
+            Kind != FaceBindingFuncKind.SoftPress && Kind != FaceBindingFuncKind.FullPress && func != null;
         public bool CanRemove => IsExtraBinding;
         public bool IsTurboEnabled => SupportsTurbo && TurboEnabled;
         public bool SupportsToggle => func is NormalPressFunc || func is HoldPressFunc || func is DoublePressFunc || func is StartPressFunc || func is ReleaseFunc;
@@ -286,6 +510,8 @@ namespace DS4MapperTest.ViewModels
         public string DisplayName => Kind switch
         {
             FaceBindingFuncKind.Regular => "Regular Press",
+            FaceBindingFuncKind.SoftPress => "Soft Press",
+            FaceBindingFuncKind.FullPress => "Full Press",
             FaceBindingFuncKind.Hold => "Hold Press",
             FaceBindingFuncKind.Double => "Double Press",
             FaceBindingFuncKind.Distance => "Distance",
@@ -314,7 +540,8 @@ namespace DS4MapperTest.ViewModels
 
             ActionFunc resolved = Kind switch
             {
-                FaceBindingFuncKind.Regular => buttonAction.ActionFuncs.OfType<NormalPressFunc>().FirstOrDefault(),
+                FaceBindingFuncKind.Regular or FaceBindingFuncKind.SoftPress or FaceBindingFuncKind.FullPress =>
+                    buttonAction.ActionFuncs.OfType<NormalPressFunc>().FirstOrDefault(),
                 FaceBindingFuncKind.Hold => buttonAction.ActionFuncs.OfType<HoldPressFunc>().FirstOrDefault(),
                 FaceBindingFuncKind.Double => buttonAction.ActionFuncs.OfType<DoublePressFunc>().FirstOrDefault(),
                 FaceBindingFuncKind.Distance => buttonAction.ActionFuncs.OfType<DistanceFunc>().FirstOrDefault(),
@@ -332,7 +559,7 @@ namespace DS4MapperTest.ViewModels
         // never land on a shared default-layer object.
         private (ButtonAction buttonAction, ActionFunc target) BeginEdit()
         {
-            ButtonAction buttonAction = owner.Owner.EnsureEditableFaceButtonAction(owner);
+            ButtonAction buttonAction = owner.EnsureEditableHostButtonAction(Kind);
             ActionFunc target = ResolveCurrentFunc(buttonAction);
             return (buttonAction, target);
         }
@@ -551,13 +778,15 @@ namespace DS4MapperTest.ViewModels
             get => func is DistanceFunc distanceFunc ? distanceFunc.distance : 0.0;
             set
             {
-                if (func is not DistanceFunc) return;
+                if (func is not DistanceFunc distanceFunc || double.IsNaN(value)) return;
+                double clampedValue = Math.Clamp(value, 0.0, 1.0);
+                if (distanceFunc.distance == clampedValue) return;
                 var (buttonAction, target) = BeginEdit();
                 if (target is not DistanceFunc targetFunc) return;
                 owner.Owner.DeviceMapper.ProcessMappingChangeAction(() =>
                 {
                     owner.Owner.ReleaseFaceAction(owner);
-                    targetFunc.distance = Math.Clamp(value, 0.0, 1.0);
+                    targetFunc.distance = clampedValue;
                     FaceButtonBindingItem.MarkFunctionsChanged(buttonAction);
                 });
                 owner.RefreshAfterEdit();
@@ -591,6 +820,102 @@ namespace DS4MapperTest.ViewModels
             this.owner = owner;
             Kind = kind;
             this.func = func;
+            RefreshOutputItems();
+        }
+
+        internal ActionFunc EnsureCurrentFunc(ButtonAction buttonAction)
+        {
+            ActionFunc target = ResolveCurrentFunc(buttonAction);
+            if (target != null) return target;
+
+            target = FaceButtonBindingItem.CreateFuncForKind(Kind);
+            if (target == null) return null;
+
+            owner.Owner.DeviceMapper.ProcessMappingChangeAction(() =>
+            {
+                buttonAction.Release(owner.Owner.DeviceMapper, ignoreReleaseActions: true);
+                buttonAction.ActionFuncs.Add(target);
+                FaceButtonBindingItem.MarkFunctionsChanged(buttonAction);
+            });
+
+            return target;
+        }
+
+        public void AddOutputAction()
+        {
+            ButtonAction buttonAction = owner.EnsureEditableHostButtonAction(Kind);
+            if (buttonAction == null) return;
+            ActionFunc target = EnsureCurrentFunc(buttonAction);
+            if (target == null) return;
+
+            owner.Owner.DeviceMapper.ProcessMappingChangeAction(() =>
+            {
+                buttonAction.Release(owner.Owner.DeviceMapper, ignoreReleaseActions: true);
+                target.OutputActions.Add(new OutputActionData(OutputActionData.ActionType.Empty, 0));
+                FaceButtonBindingItem.MarkFunctionsChanged(buttonAction);
+            });
+
+            owner.RefreshAfterEdit();
+        }
+
+        public void RemoveOutputAction(ActionOutputItem item)
+        {
+            if (item == null) return;
+
+            ButtonAction buttonAction = owner.EnsureEditableHostButtonAction(Kind);
+            if (buttonAction == null) return;
+            ActionFunc target = EnsureCurrentFunc(buttonAction);
+            if (target == null) return;
+
+            int index = item.Index;
+            if (index < 0 || index >= target.OutputActions.Count) return;
+
+            owner.Owner.DeviceMapper.ProcessMappingChangeAction(() =>
+            {
+                buttonAction.Release(owner.Owner.DeviceMapper, ignoreReleaseActions: true);
+
+                if (target.OutputActions.Count <= 1)
+                {
+                    OutputActionData data = target.OutputActions[0];
+                    data.Reset();
+                    data.Prepare(OutputActionData.ActionType.Empty, 0);
+                    data.OutputCodeStr = OutputActionData.ActionType.Empty.ToString();
+                }
+                else
+                {
+                    target.OutputActions.RemoveAt(index);
+                }
+
+                FaceButtonBindingItem.MarkFunctionsChanged(buttonAction);
+            });
+
+            owner.RefreshAfterEdit();
+        }
+
+        internal EditFaceBindingContext PrepareEdit(ActionOutputItem item)
+        {
+            ButtonAction buttonAction = owner.EnsureEditableHostButtonAction(Kind);
+            if (buttonAction == null) return null;
+            ActionFunc target = EnsureCurrentFunc(buttonAction);
+            if (target == null) return null;
+
+            int index = item?.Index ?? 0;
+            while (target.OutputActions.Count <= index)
+            {
+                target.OutputActions.Add(new OutputActionData(OutputActionData.ActionType.Empty, 0));
+            }
+
+            return new EditFaceBindingContext(owner.Owner.DeviceMapper, buttonAction, target, index);
+        }
+
+        private void RefreshOutputItems()
+        {
+            outputItems.Clear();
+            int count = Math.Max(1, func?.OutputActions.Count ?? 0);
+            for (int i = 0; i < count; i++)
+            {
+                outputItems.Add(new ActionOutputItem(this, i));
+            }
         }
 
         // IQuickBindTarget
@@ -601,9 +926,20 @@ namespace DS4MapperTest.ViewModels
         EditFaceBindingContext IQuickBindTarget.GetEditContext() => owner.PrepareEdit(this);
         void IQuickBindTarget.NotifyBindingChanged() => owner.RefreshAfterEdit();
 
+        Mapper IActionOutputListOwner.Mapper => owner.Owner.DeviceMapper;
+        string IActionOutputListOwner.RowLabel => owner.DisplayName;
+        string IActionOutputListOwner.SlotLabel => DisplayName;
+        ActionFunc IActionOutputListOwner.Func => func;
+        EditFaceBindingContext IActionOutputListOwner.PrepareEdit(ActionOutputItem item) => PrepareEdit(item);
+        void IActionOutputListOwner.AddOutputAction() => AddOutputAction();
+        void IActionOutputListOwner.RemoveOutputAction(ActionOutputItem item) => RemoveOutputAction(item);
+        void IActionOutputListOwner.NotifyBindingChanged() => owner.RefreshAfterEdit();
+
         public void Refresh()
         {
+            RefreshOutputItems();
             OnPropertyChanged(nameof(DisplayBind));
+            OnPropertyChanged(nameof(OutputItems));
             OnPropertyChanged(nameof(ToggleEnabled));
             OnPropertyChanged(nameof(TurboEnabled));
             OnPropertyChanged(nameof(TurboDurationMs));
@@ -632,10 +968,33 @@ namespace DS4MapperTest.ViewModels
         public ActionFunc Func { get; }
 
         public EditFaceBindingContext(Mapper mapper, ButtonAction action, ActionFunc func)
+            : this(mapper, action, func, null)
+        {
+        }
+
+        public int? OutputIndex { get; }
+
+        public EditFaceBindingContext(Mapper mapper, ButtonAction action, ActionFunc func,
+            int? outputIndex)
         {
             Mapper = mapper;
             Action = action;
             Func = func;
+            OutputIndex = outputIndex;
+        }
+    }
+
+    // ComboBox item for the touchpad pressure Activation Style dropdown. Uses the same
+    // five options, in the same order, as the trigger dual-stage Activation Style dropdown.
+    public class ActivationStyleChoice
+    {
+        public string DisplayName { get; }
+        public TriggerDualStageAction.DualStageMode Value { get; }
+
+        public ActivationStyleChoice(string displayName, TriggerDualStageAction.DualStageMode value)
+        {
+            DisplayName = displayName;
+            Value = value;
         }
     }
 }
