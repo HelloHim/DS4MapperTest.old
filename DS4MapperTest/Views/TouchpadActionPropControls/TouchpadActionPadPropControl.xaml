@@ -376,7 +376,7 @@
                                                 <ColumnDefinition Width="260"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Opposite Tap Start Delay Variance Mode" Style="{StaticResource JsmccLabelText}"/>
+                                            <TextBlock Grid.Column="0" Text="Opposite Tap Start Delay Mode" Style="{StaticResource JsmccLabelText}"/>
                                             <ComboBox Grid.Column="1"
                                                       ItemsSource="{Binding StartDelayModeItems}"
                                                       DisplayMemberPath="DisplayName"

@@ -27,10 +27,9 @@ namespace DS4MapperTest.StickActions
         public const int DEFAULT_START_DELAY_MINIMUM_MS = 0;
         public const int DEFAULT_START_DELAY_MAXIMUM_MS = 0;
 
-        // New actions default to Minimum/Maximum: the setting's only representation before
-        // Fixed/Percentage modes existed, so existing profiles and existing user expectations
-        // both already assume a range.
-        private OppositeTapStartDelayMode mode = OppositeTapStartDelayMode.MinimumAndMaximum;
+        // New actions default to Fixed at 0ms, preserving immediate-start behaviour while
+        // making the simplest representation the initially selected UI mode.
+        private OppositeTapStartDelayMode mode = OppositeTapStartDelayMode.Fixed;
         public OppositeTapStartDelayMode Mode
         {
             get => mode;

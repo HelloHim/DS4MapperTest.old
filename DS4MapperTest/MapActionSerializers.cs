@@ -2281,7 +2281,7 @@ namespace DS4MapperTest
 
                 if (!touchActionPadAction.ChangedProperties.Contains(TouchpadActionPad.PropertyKeyStrings.COUNTER_MOVEMENT_START_DELAY_MODE))
                 {
-                    touchActionPadAction.ReleaseBrake.OppositeTapStartDelayMode = OppositeTapStartDelayMode.MinimumAndMaximum;
+                    touchActionPadAction.ReleaseBrake.OppositeTapStartDelayMode = OppositeTapStartDelayMode.Fixed;
                     touchActionPadAction.ChangedProperties.Add(TouchpadActionPad.PropertyKeyStrings.COUNTER_MOVEMENT_START_DELAY_MODE);
                 }
 
@@ -6983,7 +6983,7 @@ namespace DS4MapperTest
 
                 if (!stickPadAct.ChangedProperties.Contains(StickPadAction.PropertyKeyStrings.COUNTER_MOVEMENT_START_DELAY_MODE))
                 {
-                    stickPadAct.CounterMovementReleasePress.OppositeTapStartDelayMode = OppositeTapStartDelayMode.MinimumAndMaximum;
+                    stickPadAct.CounterMovementReleasePress.OppositeTapStartDelayMode = OppositeTapStartDelayMode.Fixed;
                     stickPadAct.ChangedProperties.Add(StickPadAction.PropertyKeyStrings.COUNTER_MOVEMENT_START_DELAY_MODE);
                 }
 
@@ -7784,7 +7784,7 @@ namespace DS4MapperTest
 
                 if (!analogAct.ChangedProperties.Contains(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_START_DELAY_MODE))
                 {
-                    analogAct.CounterMovementReleasePress.OppositeTapStartDelayMode = OppositeTapStartDelayMode.MinimumAndMaximum;
+                    analogAct.CounterMovementReleasePress.OppositeTapStartDelayMode = OppositeTapStartDelayMode.Fixed;
                     analogAct.ChangedProperties.Add(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_START_DELAY_MODE);
                 }
 
