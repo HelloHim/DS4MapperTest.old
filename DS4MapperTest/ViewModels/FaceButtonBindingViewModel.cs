@@ -997,18 +997,4 @@ namespace DS4MapperTest.ViewModels
             Value = value;
         }
     }
-
-    // ComboBox item for the touchpad pressure Activation Style dropdown. Uses the same
-    // five options, in the same order, as the trigger dual-stage Activation Style dropdown.
-    public class ActivationStyleChoice
-    {
-        public string DisplayName { get; }
-        public TriggerDualStageAction.DualStageMode Value { get; }
-
-        public ActivationStyleChoice(string displayName, TriggerDualStageAction.DualStageMode value)
-        {
-            DisplayName = displayName;
-            Value = value;
-        }
-    }
 }
