@@ -651,6 +651,12 @@ namespace DS4MapperTest.ViewModels
         public event EventHandler UnboundActiveChanged;
 
         public ButtonActionEditViewModel(Mapper mapper, ButtonAction currentAction, ActionFunc func)
+            : this(mapper, currentAction, func, 0)
+        {
+        }
+
+        public ButtonActionEditViewModel(Mapper mapper, ButtonAction currentAction, ActionFunc func,
+            int initialSlotIndex)
         {
             this.currentAction = currentAction;
             this.mapper = mapper;
@@ -690,8 +696,9 @@ namespace DS4MapperTest.ViewModels
 
             if (slotItems.Count > 0)
             {
-                PrepareControlsForSlot(slotItems[0]);
-                SelectedSlotItemIndex = 0;
+                int selectedIndex = Math.Clamp(initialSlotIndex, 0, slotItems.Count - 1);
+                PrepareControlsForSlot(slotItems[selectedIndex]);
+                SelectedSlotItemIndex = selectedIndex;
             }
 
             copyFlickTurnRWCComm = new BasicActionCommand((parameter) =>
