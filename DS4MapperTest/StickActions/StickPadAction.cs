@@ -34,6 +34,9 @@ namespace DS4MapperTest.StickActions
             public const string PAD_MODE = "PadMode";
             public const string DEAD_ZONE_TYPE = "DeadZoneType";
             public const string DEAD_ZONE = "DeadZone";
+            public const string SEPARATE_AXIS_DEAD_ZONES = "SeparateAxisDeadZones";
+            public const string DEAD_ZONE_X = "DeadZoneX";
+            public const string DEAD_ZONE_Y = "DeadZoneY";
             public const string MAX_ZONE = "MaxZone";
             public const string ROTATION = "Rotation";
             public const string DIAGONAL_RANGE = "DiagonalRange";
@@ -66,6 +69,9 @@ namespace DS4MapperTest.StickActions
             PropertyKeyStrings.PAD_MODE,
             PropertyKeyStrings.DEAD_ZONE_TYPE,
             PropertyKeyStrings.DEAD_ZONE,
+            PropertyKeyStrings.SEPARATE_AXIS_DEAD_ZONES,
+            PropertyKeyStrings.DEAD_ZONE_X,
+            PropertyKeyStrings.DEAD_ZONE_Y,
             PropertyKeyStrings.MAX_ZONE,
             PropertyKeyStrings.PAD_DIR_UP,
             PropertyKeyStrings.PAD_DIR_DOWN,
@@ -1513,6 +1519,15 @@ namespace DS4MapperTest.StickActions
                         case PropertyKeyStrings.DEAD_ZONE:
                             deadMod.DeadZone = tempPadAction.deadMod.DeadZone;
                             break;
+                        case PropertyKeyStrings.SEPARATE_AXIS_DEAD_ZONES:
+                            deadMod.SeparateAxisDeadZones = tempPadAction.deadMod.SeparateAxisDeadZones;
+                            break;
+                        case PropertyKeyStrings.DEAD_ZONE_X:
+                            deadMod.DeadZoneX = tempPadAction.deadMod.DeadZoneX;
+                            break;
+                        case PropertyKeyStrings.DEAD_ZONE_Y:
+                            deadMod.DeadZoneY = tempPadAction.deadMod.DeadZoneY;
+                            break;
                         case PropertyKeyStrings.MAX_ZONE:
                             deadMod.MaxZone = tempPadAction.deadMod.MaxZone;
                             break;
@@ -1700,6 +1715,15 @@ namespace DS4MapperTest.StickActions
                     break;
                 case PropertyKeyStrings.DEAD_ZONE:
                     deadMod.DeadZone = tempPadAction.deadMod.DeadZone;
+                    break;
+                case PropertyKeyStrings.SEPARATE_AXIS_DEAD_ZONES:
+                    deadMod.SeparateAxisDeadZones = tempPadAction.deadMod.SeparateAxisDeadZones;
+                    break;
+                case PropertyKeyStrings.DEAD_ZONE_X:
+                    deadMod.DeadZoneX = tempPadAction.deadMod.DeadZoneX;
+                    break;
+                case PropertyKeyStrings.DEAD_ZONE_Y:
+                    deadMod.DeadZoneY = tempPadAction.deadMod.DeadZoneY;
                     break;
                 case PropertyKeyStrings.MAX_ZONE:
                     deadMod.MaxZone = tempPadAction.deadMod.MaxZone;
