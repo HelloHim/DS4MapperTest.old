@@ -281,6 +281,19 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         }
         public event EventHandler CounterMovementReleasePressEnabledChanged;
 
+        public bool UseArrowKeysForCounterMovementPresses
+        {
+            get => action.CounterMovementReleasePress.UseArrowKeysForCounterMovementPresses;
+            set
+            {
+                if (action.CounterMovementReleasePress.UseArrowKeysForCounterMovementPresses == value) return;
+                action.CounterMovementReleasePress.UseArrowKeysForCounterMovementPresses = value;
+                UseArrowKeysForCounterMovementPressesChanged?.Invoke(this, EventArgs.Empty);
+                ActionPropertyChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        public event EventHandler UseArrowKeysForCounterMovementPressesChanged;
+
         private List<EnumChoiceSelection<OppositeTapLengthMode>> tapLengthModeItems =
             new List<EnumChoiceSelection<OppositeTapLengthMode>>()
             {
@@ -597,6 +610,8 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
 
         public bool HighlightCounterMovementReleasePressEnabled =>
             action.ParentAction == null || action.ChangedProperties.Contains(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_ENABLED);
+        public bool HighlightUseArrowKeysForCounterMovementPresses =>
+            action.ParentAction == null || action.ChangedProperties.Contains(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_USE_ARROW_KEYS);
         public bool HighlightTapLengthPreset =>
             action.ParentAction == null || action.ChangedProperties.Contains(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_TAP_LENGTH_PRESET);
         public bool HighlightOppositeTapLengthMode =>
@@ -700,6 +715,7 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
             AnalogEmulationPulseTimeMsChanged += StickAnalogEmulationPropViewModel_AnalogEmulationPulseTimeMsChanged;
             FullSpeedThresholdPercentChanged += StickAnalogEmulationPropViewModel_FullSpeedThresholdPercentChanged;
             CounterMovementReleasePressEnabledChanged += StickAnalogEmulationPropViewModel_CounterMovementReleasePressEnabledChanged;
+            UseArrowKeysForCounterMovementPressesChanged += StickAnalogEmulationPropViewModel_UseArrowKeysForCounterMovementPressesChanged;
             TapLengthPresetChanged += StickAnalogEmulationPropViewModel_TapLengthPresetChanged;
             OppositeTapLengthModeChanged += StickAnalogEmulationPropViewModel_OppositeTapLengthModeChanged;
             OppositeTapLengthMsChanged += StickAnalogEmulationPropViewModel_OppositeTapLengthMsChanged;
@@ -815,6 +831,12 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         {
             action.ChangedProperties.Add(StickAnalogEmulationAction.PropertyKeyStrings.DEAD_ZONE);
             action.RaiseNotifyPropertyChange(mapper, StickAnalogEmulationAction.PropertyKeyStrings.DEAD_ZONE);
+        }
+
+        private void StickAnalogEmulationPropViewModel_UseArrowKeysForCounterMovementPressesChanged(object sender, EventArgs e)
+        {
+            action.ChangedProperties.Add(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_USE_ARROW_KEYS);
+            action.RaiseNotifyPropertyChange(mapper, StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_USE_ARROW_KEYS);
         }
 
         private void StickAnalogEmulationPropViewModel_SeparateAxisDeadZonesChanged(object sender, EventArgs e)

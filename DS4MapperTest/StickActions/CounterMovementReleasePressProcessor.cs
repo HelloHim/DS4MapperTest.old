@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using DS4MapperTest.ActionUtil;
 using DS4MapperTest.ButtonActions;
+using DS4MapperTest.MapperUtil;
 
 namespace DS4MapperTest.StickActions
 {
@@ -103,6 +104,18 @@ namespace DS4MapperTest.StickActions
             {
                 if (enabled == value) return;
                 enabled = value;
+                ForceReleaseAndReset();
+            }
+        }
+
+        private bool useArrowKeysForCounterMovementPresses;
+        public bool UseArrowKeysForCounterMovementPresses
+        {
+            get => useArrowKeysForCounterMovementPresses;
+            set
+            {
+                if (useArrowKeysForCounterMovementPresses == value) return;
+                useArrowKeysForCounterMovementPresses = value;
                 ForceReleaseAndReset();
             }
         }
@@ -344,7 +357,11 @@ namespace DS4MapperTest.StickActions
         private StickPadAction.DpadDirections suppressedComponents;
         private StickPadAction.DpadDirections pulseOwnedComponents;
         private StickPadAction.DpadDirections pendingOppositeComponents;
-        private StickPadAction.DpadDirections explicitReleaseComponents;
+        private StickPadAction.DpadDirections normalReleaseComponents;
+        private StickPadAction.DpadDirections arrowReleaseComponents;
+        private bool pendingUsesArrowKeys;
+        private bool pulseUsesArrowKeys;
+        private readonly AxisDirButton[] arrowOutputs = new AxisDirButton[13];
 
         // Sampled once per activation in EnterReleasePress, then held for the lifetime of
         // that activation. Never resampled while WaitingForOppositeTap/OppositeTapActive or
@@ -526,7 +543,8 @@ namespace DS4MapperTest.StickActions
                 StickPadAction.DpadDirections c = CardinalComponents[i];
                 if (Has(pulseOwnedComponents, c))
                 {
-                    AxisDirButton data = usedFuncList[(int)c];
+                    AxisDirButton data = GetCounterMovementOutput(mapper, usedFuncList, c,
+                        pulseUsesArrowKeys);
                     if (data != null)
                     {
                         data.PrepareAnalog(mapper, 1.0, 1.0);
@@ -549,7 +567,7 @@ namespace DS4MapperTest.StickActions
 
         private void FlushReleases(Mapper mapper, AxisDirButton[] usedFuncList)
         {
-            if (usedFuncList == null || explicitReleaseComponents == StickPadAction.DpadDirections.Centered)
+            if (usedFuncList == null)
             {
                 return;
             }
@@ -557,7 +575,7 @@ namespace DS4MapperTest.StickActions
             for (int i = 0; i < CardinalComponents.Length; i++)
             {
                 StickPadAction.DpadDirections c = CardinalComponents[i];
-                if (Has(explicitReleaseComponents, c))
+                if (Has(normalReleaseComponents, c))
                 {
                     AxisDirButton data = usedFuncList[(int)c];
                     if (data != null)
@@ -566,9 +584,20 @@ namespace DS4MapperTest.StickActions
                         data.Event(mapper);
                     }
                 }
+
+                if (Has(arrowReleaseComponents, c))
+                {
+                    AxisDirButton data = GetCounterMovementOutput(mapper, usedFuncList, c, true);
+                    if (data != null)
+                    {
+                        data.PrepareAnalog(mapper, 0.0, 0.0);
+                        data.Event(mapper);
+                    }
+                }
             }
 
-            explicitReleaseComponents = StickPadAction.DpadDirections.Centered;
+            normalReleaseComponents = StickPadAction.DpadDirections.Centered;
+            arrowReleaseComponents = StickPadAction.DpadDirections.Centered;
         }
 
         /// <summary>
@@ -646,6 +675,7 @@ namespace DS4MapperTest.StickActions
             actualOppositeHoldMs = Math.Max(0, selectedTotalTapWindowMs - selectedStartDelayMs);
 
             pendingOppositeComponents = opposite;
+            pendingUsesArrowKeys = useArrowKeysForCounterMovementPresses;
             releasePressElapsedSeconds = 0.0;
             releasePressStartTimestamp = Stopwatch.GetTimestamp();
             postTriggerMinR = rFiltered;
@@ -695,12 +725,13 @@ namespace DS4MapperTest.StickActions
             }
 
             pulseOwnedComponents = pendingOppositeComponents;
+            pulseUsesArrowKeys = pendingUsesArrowKeys;
             state = CounterMovementReleasePressState.OppositeTapActive;
         }
 
         private void EndOppositeTap()
         {
-            explicitReleaseComponents |= pulseOwnedComponents;
+            MarkPulseForRelease(pulseOwnedComponents);
             pulseOwnedComponents = StickPadAction.DpadDirections.Centered;
             releasePressStartTimestamp = 0;
             state = CounterMovementReleasePressState.Suppressed;
@@ -761,7 +792,7 @@ namespace DS4MapperTest.StickActions
                             {
                                 releasePressStartTimestamp = 0;
                             }
-                            explicitReleaseComponents |= opp;
+                            MarkPulseForRelease(opp);
                         }
                     }
                 }
@@ -799,7 +830,7 @@ namespace DS4MapperTest.StickActions
                 // where pulseOwnedComponents is still empty so touchesPulse can never be
                 // true): abandon this activation entirely, release anything owned so far,
                 // and start fresh tracking of the new push.
-                explicitReleaseComponents |= pulseOwnedComponents;
+                MarkPulseForRelease(pulseOwnedComponents);
                 pulseOwnedComponents = StickPadAction.DpadDirections.Centered;
                 releasePressStartTimestamp = 0;
                 suppressedComponents = StickPadAction.DpadDirections.Centered;
@@ -885,6 +916,58 @@ namespace DS4MapperTest.StickActions
             }
         }
 
+        private AxisDirButton GetCounterMovementOutput(Mapper mapper, AxisDirButton[] normalOutputs,
+            StickPadAction.DpadDirections direction, bool useArrowKeys)
+        {
+            if (!useArrowKeys)
+            {
+                return normalOutputs[(int)direction];
+            }
+
+            int index = (int)direction;
+            if (arrowOutputs[index] == null)
+            {
+                if (direction != StickPadAction.DpadDirections.Up &&
+                    direction != StickPadAction.DpadDirections.Down &&
+                    direction != StickPadAction.DpadDirections.Left &&
+                    direction != StickPadAction.DpadDirections.Right)
+                {
+                    return null;
+                }
+
+                VirtualKeys key = direction switch
+                {
+                    StickPadAction.DpadDirections.Up => VirtualKeys.Up,
+                    StickPadAction.DpadDirections.Down => VirtualKeys.Down,
+                    StickPadAction.DpadDirections.Left => VirtualKeys.Left,
+                    _ => VirtualKeys.Right,
+                };
+
+                VirtualKBMMapping keyboardMapping = mapper.EventInputMapping ??
+                    ProfileSerializer.EventInputMapper;
+                uint realKey = keyboardMapping != null ? keyboardMapping.GetRealEventKey((uint)key) :
+                    (uint)key;
+                OutputActionData output = new OutputActionData(OutputActionData.ActionType.Keyboard,
+                    (int)key, (int)realKey);
+                output.OutputCodeStr = OutputDataAliasUtil.KeyboardStringAliasDict[key];
+                arrowOutputs[index] = new AxisDirButton(output);
+            }
+
+            return arrowOutputs[index];
+        }
+
+        private void MarkPulseForRelease(StickPadAction.DpadDirections components)
+        {
+            if (pulseUsesArrowKeys)
+            {
+                arrowReleaseComponents |= components;
+            }
+            else
+            {
+                normalReleaseComponents |= components;
+            }
+        }
+
         private static double ComputeRadialMagnitude(int axisXDir, int axisYDir, int maxDirX, int maxDirY)
         {
             double angle = Math.Atan2(-axisYDir, axisXDir);
@@ -905,9 +988,11 @@ namespace DS4MapperTest.StickActions
         /// </summary>
         private void ForceReleaseAndReset()
         {
-            explicitReleaseComponents |= pulseOwnedComponents;
+            MarkPulseForRelease(pulseOwnedComponents);
             pulseOwnedComponents = StickPadAction.DpadDirections.Centered;
             pendingOppositeComponents = StickPadAction.DpadDirections.Centered;
+            pendingUsesArrowKeys = false;
+            pulseUsesArrowKeys = false;
             suppressedComponents = StickPadAction.DpadDirections.Centered;
             latchedZone = StickPadAction.DpadDirections.Centered;
             holdUp = holdDown = holdLeft = holdRight = 0.0;

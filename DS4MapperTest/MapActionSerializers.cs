@@ -6534,6 +6534,21 @@ namespace DS4MapperTest
                 return padAction.ChangedProperties.Contains(StickPadAction.PropertyKeyStrings.COUNTER_MOVEMENT_ENABLED);
             }
 
+            public bool UseArrowKeysForCounterMovementPresses
+            {
+                get => padAction.CounterMovementReleasePress.UseArrowKeysForCounterMovementPresses;
+                set
+                {
+                    padAction.CounterMovementReleasePress.UseArrowKeysForCounterMovementPresses = value;
+                    UseArrowKeysForCounterMovementPressesChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler UseArrowKeysForCounterMovementPressesChanged;
+            public bool ShouldSerializeUseArrowKeysForCounterMovementPresses()
+            {
+                return padAction.ChangedProperties.Contains(StickPadAction.PropertyKeyStrings.COUNTER_MOVEMENT_USE_ARROW_KEYS);
+            }
+
             public string CounterMovementTapLengthPreset
             {
                 get => padAction.CounterMovementReleasePress.TapLengthPreset.ToString();
@@ -6872,6 +6887,7 @@ namespace DS4MapperTest
             settings.RotationChanged += Settings_RotationChanged;
             settings.DiagonalRangeChanged += Settings_DiagonalRangeChanged;
             settings.CounterMovementReleasePressEnabledChanged += Settings_CounterMovementReleasePressEnabledChanged;
+            settings.UseArrowKeysForCounterMovementPressesChanged += Settings_UseArrowKeysForCounterMovementPressesChanged;
             settings.CounterMovementTapLengthPresetChanged += Settings_CounterMovementTapLengthPresetChanged;
             settings.OppositeTapLengthModeChanged += Settings_OppositeTapLengthModeChanged;
             settings.OppositeTapLengthMsChanged += Settings_OppositeTapLengthMsChanged;
@@ -6890,6 +6906,11 @@ namespace DS4MapperTest
         private void Settings_CounterMovementReleasePressEnabledChanged(object sender, EventArgs e)
         {
             stickPadAct.ChangedProperties.Add(StickPadAction.PropertyKeyStrings.COUNTER_MOVEMENT_ENABLED);
+        }
+
+        private void Settings_UseArrowKeysForCounterMovementPressesChanged(object sender, EventArgs e)
+        {
+            stickPadAct.ChangedProperties.Add(StickPadAction.PropertyKeyStrings.COUNTER_MOVEMENT_USE_ARROW_KEYS);
         }
 
         private void Settings_CounterMovementTapLengthPresetChanged(object sender, EventArgs e)
@@ -7525,6 +7546,21 @@ namespace DS4MapperTest
                 return analogAction.ChangedProperties.Contains(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_ENABLED);
             }
 
+            public bool UseArrowKeysForCounterMovementPresses
+            {
+                get => analogAction.CounterMovementReleasePress.UseArrowKeysForCounterMovementPresses;
+                set
+                {
+                    analogAction.CounterMovementReleasePress.UseArrowKeysForCounterMovementPresses = value;
+                    UseArrowKeysForCounterMovementPressesChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler UseArrowKeysForCounterMovementPressesChanged;
+            public bool ShouldSerializeUseArrowKeysForCounterMovementPresses()
+            {
+                return analogAction.ChangedProperties.Contains(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_USE_ARROW_KEYS);
+            }
+
             public string CounterMovementTapLengthPreset
             {
                 get => analogAction.CounterMovementReleasePress.TapLengthPreset.ToString();
@@ -7803,6 +7839,7 @@ namespace DS4MapperTest
             settings.AnalogEmulationPulseTimeMsChanged += Settings_AnalogEmulationPulseTimeMsChanged;
             settings.FullSpeedThresholdPercentChanged += Settings_FullSpeedThresholdPercentChanged;
             settings.CounterMovementReleasePressEnabledChanged += Settings_CounterMovementReleasePressEnabledChanged;
+            settings.UseArrowKeysForCounterMovementPressesChanged += Settings_UseArrowKeysForCounterMovementPressesChanged;
             settings.CounterMovementTapLengthPresetChanged += Settings_CounterMovementTapLengthPresetChanged;
             settings.OppositeTapLengthModeChanged += Settings_OppositeTapLengthModeChanged;
             settings.OppositeTapLengthMsChanged += Settings_OppositeTapLengthMsChanged;
@@ -7821,6 +7858,11 @@ namespace DS4MapperTest
         private void Settings_CounterMovementReleasePressEnabledChanged(object sender, EventArgs e)
         {
             analogAct.ChangedProperties.Add(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_ENABLED);
+        }
+
+        private void Settings_UseArrowKeysForCounterMovementPressesChanged(object sender, EventArgs e)
+        {
+            analogAct.ChangedProperties.Add(StickAnalogEmulationAction.PropertyKeyStrings.COUNTER_MOVEMENT_USE_ARROW_KEYS);
         }
 
         private void Settings_CounterMovementTapLengthPresetChanged(object sender, EventArgs e)
