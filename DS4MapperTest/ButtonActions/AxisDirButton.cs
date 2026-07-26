@@ -99,6 +99,10 @@ namespace DS4MapperTest.ButtonActions
                 {
                     actionFuncCandidates.AddRange(actionFuncs);
                 }
+
+                // Keep analog directions and trigger stages on the same
+                // interruptable regular-press timing path as digital buttons.
+                ConfigureRegularPressInterruptDelay(actionFuncCandidates);
             }
         }
 
