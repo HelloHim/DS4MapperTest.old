@@ -304,6 +304,13 @@ namespace DS4MapperTest
         protected static HashSet<int> activeMouseButtons = new HashSet<int>();
         protected static HashSet<int> releasedMouseButtons = new HashSet<int>();
 
+        // mouseButtonReferenceCountDict is shared across every Mapper instance
+        // (one per controller) *and*, since physical-mouse forwarding routes
+        // through AcquireSharedMouseButton/ReleaseSharedMouseButton below, the
+        // physical-mouse capture thread too. Guards read-modify-write access
+        // to it so a controller thread and the capture thread can't race.
+        private static readonly object mouseButtonRefLock = new object();
+
         protected bool hasInputEvts;
         //protected object eventQueueLock = new object();
         protected ReaderWriterLockSlim eventQueueLocker = new ReaderWriterLockSlim();
@@ -1412,17 +1419,64 @@ namespace DS4MapperTest
 
             foreach (int mouseCode in removed)
             {
+                ReleaseSharedMouseButton(eventInputHandler, eventInputMapping, mouseCode);
+            }
+
+            foreach (int mouseCode in added)
+            {
+                AcquireSharedMouseButton(eventInputHandler, eventInputMapping, mouseCode);
+            }
+
+            releasedMouseButtons.Clear();
+            activeMouseButtons.Clear();
+        }
+
+        /// <summary>
+        /// Adds one holder to a shared virtual mouse button, pressing it on
+        /// the underlying handler only on the 0-to-1 transition. Used by
+        /// SyncMouseButtons() for controller bindings and by physical-mouse
+        /// forwarding (see DS4MapperTest.PhysicalMouse.PhysicalMouseForwarder)
+        /// so neither source can release a button the other still holds.
+        /// </summary>
+        internal static void AcquireSharedMouseButton(VirtualKBMBase handler, VirtualKBMMapping mapping, int mouseCode)
+        {
+            lock (mouseButtonRefLock)
+            {
+                if (!mouseButtonReferenceCountDict.TryGetValue(mouseCode, out int refCount))
+                {
+                    uint mouseButton = GetMouseButtonDownFlag(mapping, mouseCode);
+                    if (mouseButton != 0)
+                    {
+                        handler.PerformMouseButtonPress(mouseButton);
+                        mouseButtonReferenceCountDict.Add(mouseCode, 1);
+                        currentMouseButtons.Add(mouseCode);
+                    }
+                }
+                else
+                {
+                    mouseButtonReferenceCountDict[mouseCode] = refCount + 1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes one holder from a shared virtual mouse button, releasing
+        /// it on the underlying handler only once every holder has released
+        /// it (refcount reaches 0). See <see cref="AcquireSharedMouseButton"/>.
+        /// </summary>
+        internal static void ReleaseSharedMouseButton(VirtualKBMBase handler, VirtualKBMMapping mapping, int mouseCode)
+        {
+            lock (mouseButtonRefLock)
+            {
                 if (mouseButtonReferenceCountDict.TryGetValue(mouseCode, out int refCount))
                 {
                     refCount--;
                     if (refCount <= 0)
                     {
-                        uint mouseButton = GetMouseButtonUpFlag(mouseCode);
+                        uint mouseButton = GetMouseButtonUpFlag(mapping, mouseCode);
                         if (mouseButton != 0)
                         {
-                            eventInputHandler.PerformMouseButtonRelease(mouseButton);
-                            //mouseReport.ButtonUp((FakerInputWrapper.MouseButton)mouseButton);
-                            //InputMethods.MouseEvent(mouseButton);
+                            handler.PerformMouseButtonRelease(mouseButton);
                         }
 
                         mouseButtonReferenceCountDict.Remove(mouseCode);
@@ -1434,56 +1488,33 @@ namespace DS4MapperTest
                     }
                 }
             }
-
-            foreach (int mouseCode in added)
-            {
-                if (!mouseButtonReferenceCountDict.TryGetValue(mouseCode, out int refCount))
-                {
-                    uint mouseButton = GetMouseButtonDownFlag(mouseCode);
-                    if (mouseButton != 0)
-                    {
-                        eventInputHandler.PerformMouseButtonPress(mouseButton);
-                        //mouseReport.ButtonDown((FakerInputWrapper.MouseButton)mouseCode);
-                        //InputMethods.MouseEvent(mouseButton);
-                        mouseButtonReferenceCountDict.Add(mouseCode, 1);
-                        currentMouseButtons.Add(mouseCode);
-                    }
-                }
-                else
-                {
-                    mouseButtonReferenceCountDict[mouseCode] = refCount + 1;
-                }
-            }
-
-            releasedMouseButtons.Clear();
-            activeMouseButtons.Clear();
         }
 
-        private uint GetMouseButtonDownFlag(int mouseCode)
+        private static uint GetMouseButtonDownFlag(VirtualKBMMapping mapping, int mouseCode)
         {
             switch (mouseCode)
             {
                 case MouseButtonCodes.MOUSE_LEFT_BUTTON:
-                    return eventInputMapping.MOUSEEVENTF_LEFTDOWN;
+                    return mapping.MOUSEEVENTF_LEFTDOWN;
                 case MouseButtonCodes.MOUSE_MIDDLE_BUTTON:
-                    return eventInputMapping.MOUSEEVENTF_MIDDLEDOWN;
+                    return mapping.MOUSEEVENTF_MIDDLEDOWN;
                 case MouseButtonCodes.MOUSE_RIGHT_BUTTON:
-                    return eventInputMapping.MOUSEEVENTF_RIGHTDOWN;
+                    return mapping.MOUSEEVENTF_RIGHTDOWN;
                 default:
                     return 0;
             }
         }
 
-        private uint GetMouseButtonUpFlag(int mouseCode)
+        private static uint GetMouseButtonUpFlag(VirtualKBMMapping mapping, int mouseCode)
         {
             switch (mouseCode)
             {
                 case MouseButtonCodes.MOUSE_LEFT_BUTTON:
-                    return eventInputMapping.MOUSEEVENTF_LEFTUP;
+                    return mapping.MOUSEEVENTF_LEFTUP;
                 case MouseButtonCodes.MOUSE_MIDDLE_BUTTON:
-                    return eventInputMapping.MOUSEEVENTF_MIDDLEUP;
+                    return mapping.MOUSEEVENTF_MIDDLEUP;
                 case MouseButtonCodes.MOUSE_RIGHT_BUTTON:
-                    return eventInputMapping.MOUSEEVENTF_RIGHTUP;
+                    return mapping.MOUSEEVENTF_RIGHTUP;
                 default:
                     return 0;
             }
