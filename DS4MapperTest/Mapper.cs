@@ -1500,6 +1500,10 @@ namespace DS4MapperTest
                     return mapping.MOUSEEVENTF_MIDDLEDOWN;
                 case MouseButtonCodes.MOUSE_RIGHT_BUTTON:
                     return mapping.MOUSEEVENTF_RIGHTDOWN;
+                case MouseButtonCodes.MOUSE_XBUTTON1:
+                    return mapping.MOUSEEVENTF_XBUTTON1DOWN;
+                case MouseButtonCodes.MOUSE_XBUTTON2:
+                    return mapping.MOUSEEVENTF_XBUTTON2DOWN;
                 default:
                     return 0;
             }
@@ -1515,6 +1519,10 @@ namespace DS4MapperTest
                     return mapping.MOUSEEVENTF_MIDDLEUP;
                 case MouseButtonCodes.MOUSE_RIGHT_BUTTON:
                     return mapping.MOUSEEVENTF_RIGHTUP;
+                case MouseButtonCodes.MOUSE_XBUTTON1:
+                    return mapping.MOUSEEVENTF_XBUTTON1UP;
+                case MouseButtonCodes.MOUSE_XBUTTON2:
+                    return mapping.MOUSEEVENTF_XBUTTON2UP;
                 default:
                     return 0;
             }
@@ -1933,6 +1941,8 @@ namespace DS4MapperTest
                             case MouseButtonCodes.MOUSE_LEFT_BUTTON:
                             case MouseButtonCodes.MOUSE_MIDDLE_BUTTON:
                             case MouseButtonCodes.MOUSE_RIGHT_BUTTON:
+                            case MouseButtonCodes.MOUSE_XBUTTON1:
+                            case MouseButtonCodes.MOUSE_XBUTTON2:
                                 if (pressed)
                                 {
                                     if (!actionData.activatedEvent)
@@ -2073,6 +2083,8 @@ namespace DS4MapperTest
                             case MouseButtonCodes.MOUSE_LEFT_BUTTON:
                             case MouseButtonCodes.MOUSE_MIDDLE_BUTTON:
                             case MouseButtonCodes.MOUSE_RIGHT_BUTTON:
+                            case MouseButtonCodes.MOUSE_XBUTTON1:
+                            case MouseButtonCodes.MOUSE_XBUTTON2:
                                 if (pressed)
                                 {
                                     if (!actionData.activatedEvent)
