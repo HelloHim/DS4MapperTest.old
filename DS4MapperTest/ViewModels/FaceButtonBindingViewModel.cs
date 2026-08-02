@@ -17,6 +17,7 @@ namespace DS4MapperTest.ViewModels
         Double,
         Distance,
         Chorded,
+        SimPress,
         Start,
         Release,
         // Permanent activators for a pressure-capable touchpad click binding
