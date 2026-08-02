@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using DS4MapperTest.JoyConLibrary;
+using DS4MapperTest.PhysicalMouse;
 
 namespace DS4MapperTest
 {
@@ -55,6 +56,7 @@ namespace DS4MapperTest
         public event EventHandler ServiceStarted;
         public event EventHandler PreServiceStop;
         public event EventHandler ServiceStopped;
+        public event EventHandler PhysicalMouseStatusChanged;
         //public event EventHandler HotplugFinished;
 
         private VirtualKBMBase virtualEventHandler;// = new FakerInputHandler();
@@ -62,6 +64,13 @@ namespace DS4MapperTest
 
         private VirtualKBMMapping eventInputMapping;// = new FakerInputMapping();
         public VirtualKBMMapping EventInputMapping => eventInputMapping;
+
+        // Phase-2 physical-mouse forwarding. Owned here (not by the WPF UI)
+        // so it starts/stops with the backend service regardless of which
+        // window, if any, is open. See PhysicalMouseService for the actual
+        // capture -> FakerInput wiring.
+        private readonly PhysicalMouseService physicalMouseService = new PhysicalMouseService();
+        public PhysicalMouseServiceStatus PhysicalMouseStatus => physicalMouseService.Status;
 
         private Dictionary<int, Mapper> mapperDict;
         public Dictionary<int, Mapper> MapperDict
@@ -118,6 +127,7 @@ namespace DS4MapperTest
         {
             _argParser = argParse;
             this.appGlobal = appGlobal;
+            physicalMouseService.StatusChanged += (_, _) => PhysicalMouseStatusChanged?.Invoke(this, EventArgs.Empty);
 
             mapperDict = new Dictionary<int, Mapper>();
             deviceReadersMap = new Dictionary<InputDeviceBase, DeviceReaderBase>();
@@ -178,6 +188,43 @@ namespace DS4MapperTest
             }
         }
 
+        public bool ApplyPhysicalMouseSettings(bool enabled, string stableDeviceId, out string validationMessage)
+        {
+            validationMessage = null;
+            if (enabled && string.IsNullOrEmpty(stableDeviceId))
+            {
+                validationMessage = "Select a physical mouse before enabling forwarding.";
+                return false;
+            }
+
+            bool isVirtual = false;
+            try
+            {
+                isVirtual = enabled && Util.CheckIfVirtualDevice(stableDeviceId);
+            }
+            catch
+            {
+                // The service repeats this best-effort guard. A lookup
+                // failure must not destabilise controller/gyro output.
+            }
+            if (isVirtual)
+            {
+                validationMessage = "The selected device is virtual and cannot be captured.";
+                return false;
+            }
+
+            appGlobal.appSettings.PhysicalMouseForwardingEnabled = enabled;
+            appGlobal.appSettings.SelectedPhysicalMouseId = stableDeviceId ?? string.Empty;
+            appGlobal.SaveAppSettings();
+
+            if (isRunning)
+            {
+                physicalMouseService.Reconfigure(enabled, stableDeviceId,
+                    virtualEventHandler, eventInputMapping);
+            }
+            return true;
+        }
+
         public void Start()
         {
             if (isRunning || changingService) return;
@@ -186,6 +233,11 @@ namespace DS4MapperTest
             changingService = true;
 
             InitOutputKBMHandler();
+
+            bool physicalMouseEnabled = appGlobal.appSettings?.PhysicalMouseForwardingEnabled ?? false;
+            string selectedPhysicalMouseId = appGlobal.appSettings?.SelectedPhysicalMouseId;
+            physicalMouseService.Start(physicalMouseEnabled, selectedPhysicalMouseId, virtualEventHandler, eventInputMapping);
+            LogDebug($"Physical mouse forwarding: {physicalMouseService.Status}");
 
             // Change thread affinity of bus object to not be tied
             // to GUI thread
@@ -564,6 +616,10 @@ namespace DS4MapperTest
             changingService = true;
             isRunning = false;
 
+            // Stop physical-mouse capture/forwarding first: it must not
+            // outlive or race the virtualEventHandler teardown below.
+            physicalMouseService.Stop();
+
             PreServiceStop?.Invoke(this, EventArgs.Empty);
 
             foreach (Mapper mapper in mapperDict.Values)
@@ -612,6 +668,7 @@ namespace DS4MapperTest
 
         public void ShutDown()
         {
+            physicalMouseService.Dispose();
         }
 
         public void Hotplug()
