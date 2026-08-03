@@ -33,6 +33,7 @@ namespace DS4MapperTest.StickActions
             public const string DIR_RIGHT = "DirRight";
 
             public const string DIRECTION_MODE = "DirectionMode";
+            public const string DIAGONAL_ZONE_WIDTH = "DiagonalZoneWidth";
             public const string DIRECTION_PULSE_TIME_MS = "DirectionPulseTimeMs";
             public const string SPEED_ENABLED = "AnalogSpeedEmulationEnabled";
             public const string SPEED_ACTIVE_PERCENT = "AnalogEmulationActivePercent";
@@ -73,6 +74,7 @@ namespace DS4MapperTest.StickActions
             PropertyKeyStrings.DIR_LEFT,
             PropertyKeyStrings.DIR_RIGHT,
             PropertyKeyStrings.DIRECTION_MODE,
+            PropertyKeyStrings.DIAGONAL_ZONE_WIDTH,
             PropertyKeyStrings.DIRECTION_PULSE_TIME_MS,
             PropertyKeyStrings.SPEED_ENABLED,
             PropertyKeyStrings.SPEED_ACTIVE_PERCENT,
@@ -107,6 +109,7 @@ namespace DS4MapperTest.StickActions
         }
 
         public const int DEFAULT_DIRECTION_PULSE_MS = 30;
+        public const int DEFAULT_DIAGONAL_ZONE_WIDTH = 45;
         public const int DEFAULT_SPEED_ACTIVE_PERCENT = 15;
         public const int DEFAULT_SPEED_PULSE_MS = 30;
         public const int DEFAULT_FULL_SPEED_THRESHOLD_PERCENT = 80;
@@ -141,6 +144,13 @@ namespace DS4MapperTest.StickActions
         {
             get => directionMode;
             set => directionMode = value;
+        }
+
+        private int diagonalZoneWidth = DEFAULT_DIAGONAL_ZONE_WIDTH;
+        public int DiagonalZoneWidth
+        {
+            get => diagonalZoneWidth;
+            set => diagonalZoneWidth = Math.Clamp(value, 0, 90);
         }
 
         private int directionPulseTimeMs = DEFAULT_DIRECTION_PULSE_MS;
@@ -239,6 +249,7 @@ namespace DS4MapperTest.StickActions
                 rotation = parentAction.rotation;
 
                 directionMode = parentAction.directionMode;
+                diagonalZoneWidth = parentAction.diagonalZoneWidth;
                 directionPulseTimeMs = parentAction.directionPulseTimeMs;
                 speedEmulationEnabled = parentAction.speedEmulationEnabled;
                 speedActivePercent = parentAction.speedActivePercent;
@@ -359,7 +370,7 @@ namespace DS4MapperTest.StickActions
                 bool dtValid = dt > 0.0 && dt <= 0.5;
                 double dtMs = dtValid ? dt * 1000.0 : 0.0;
 
-                AnalogEmulationMath.ComputeDirectionBlend(xNorm, yNorm, directionMode,
+                AnalogEmulationMath.ComputeDirectionBlend(xNorm, yNorm, directionMode, diagonalZoneWidth,
                     out currentPrimary, out currentSecondary, out currentSecondaryBlend);
 
                 directionPhaseMs += dtMs;
@@ -394,6 +405,7 @@ namespace DS4MapperTest.StickActions
             // masked out of the smooth primary/secondary emission below.
             RefreshBrakeSlotButtons();
             AnalogEmulationMath.ComputeDirectionBlend(xNorm, yNorm, AnalogEmulationMath.ResolutionMode.EightWay,
+                directionMode == AnalogEmulationMath.ResolutionMode.EightWay ? diagonalZoneWidth : DEFAULT_DIAGONAL_ZONE_WIDTH,
                 out AnalogEmulationMath.Direction rawPrimary, out AnalogEmulationMath.Direction rawSecondary, out double rawBlend);
             StickPadAction.DpadDirections rawDpadDir = ToDpadBit(rawPrimary);
             if (rawBlend >= 1.0) rawDpadDir |= ToDpadBit(rawSecondary);
@@ -597,6 +609,9 @@ namespace DS4MapperTest.StickActions
                     break;
                 case PropertyKeyStrings.DIRECTION_MODE:
                     directionMode = tempAction.directionMode;
+                    break;
+                case PropertyKeyStrings.DIAGONAL_ZONE_WIDTH:
+                    diagonalZoneWidth = tempAction.diagonalZoneWidth;
                     break;
                 case PropertyKeyStrings.DIRECTION_PULSE_TIME_MS:
                     directionPulseTimeMs = tempAction.directionPulseTimeMs;
