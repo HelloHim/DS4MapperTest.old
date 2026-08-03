@@ -106,9 +106,8 @@ namespace DS4MapperTest.ViewModels
             settingsViewModel is StickAnalogEmulationPropViewModel;
 
         public string CurrentModeDisplayName =>
-            selectedModeIndex >= 0 && selectedModeIndex < sharedModeItems.Count
-                ? sharedModeItems[selectedModeIndex].DisplayName
-                : sharedModeItems[0].DisplayName;
+            (sharedModeItems.FirstOrDefault(item => item.Index == selectedModeIndex)
+                ?? sharedModeItems[0]).DisplayName;
 
         public string AdvancedPlaceholderText =>
             $"{SideLabel} is set to {CurrentModeDisplayName}. This mode has no advanced settings.";
