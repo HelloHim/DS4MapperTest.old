@@ -42,6 +42,31 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         }
         public event EventHandler NameChanged;
 
+        // Kept here so legacy analogue-emulation actions are edited through the same
+        // D-Pad mode selector as newly-created D-Pad actions.
+        private readonly List<PadModeItem> padModeItems = new List<PadModeItem>()
+        {
+            new PadModeItem("8 Way (Overlap)", StickPadAction.DPadMode.Standard),
+            new PadModeItem("8 Way (Separate Diagonals)", StickPadAction.DPadMode.EightWay),
+            new PadModeItem("4 Way (Cardinal)", StickPadAction.DPadMode.FourWayCardinal),
+            new PadModeItem("4 Way (Diagonal)", StickPadAction.DPadMode.FourWayDiagonal),
+            new PadModeItem("Analog Emulation", StickPadAction.DPadMode.AnalogEmulation),
+        };
+        public List<PadModeItem> PadModeItems => padModeItems;
+        public StickPadAction.DPadMode SelectedPadMode => padModeItems[selectedPadModeIndex].DPadMode;
+        private int selectedPadModeIndex = 4;
+        public int SelectedPadModeIndex
+        {
+            get => selectedPadModeIndex;
+            set
+            {
+                if (selectedPadModeIndex == value) return;
+                selectedPadModeIndex = value;
+                SelectedPadModeIndexChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        public event EventHandler SelectedPadModeIndexChanged;
+
         private List<EnumChoiceSelection<StickDeadZone.DeadZoneTypes>> deadZoneModesChoices =
             new List<EnumChoiceSelection<StickDeadZone.DeadZoneTypes>>()
             {
@@ -182,6 +207,23 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
             }
         }
         public event EventHandler DirectionResolutionChanged;
+
+        public bool IsEightWayDirectionResolution =>
+            action.DirectionMode == AnalogEmulationMath.ResolutionMode.EightWay;
+        public event EventHandler IsEightWayDirectionResolutionChanged;
+
+        public int DiagonalZoneWidth
+        {
+            get => action.DiagonalZoneWidth;
+            set
+            {
+                if (action.DiagonalZoneWidth == value) return;
+                action.DiagonalZoneWidth = value;
+                DiagonalZoneWidthChanged?.Invoke(this, EventArgs.Empty);
+                ActionPropertyChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        public event EventHandler DiagonalZoneWidthChanged;
 
         public int DirectionPulseTimeMs
         {
@@ -709,6 +751,7 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
             RotationChanged += StickAnalogEmulationPropViewModel_RotationChanged;
             ActionPresetChoiceChanged += StickAnalogEmulationPropViewModel_ActionPresetChoiceChanged;
             DirectionResolutionChanged += StickAnalogEmulationPropViewModel_DirectionResolutionChanged;
+            DiagonalZoneWidthChanged += StickAnalogEmulationPropViewModel_DiagonalZoneWidthChanged;
             DirectionPulseTimeMsChanged += StickAnalogEmulationPropViewModel_DirectionPulseTimeMsChanged;
             AnalogSpeedEmulationEnabledChanged += StickAnalogEmulationPropViewModel_AnalogSpeedEmulationEnabledChanged;
             AnalogEmulationActivePercentChanged += StickAnalogEmulationPropViewModel_AnalogEmulationActivePercentChanged;
@@ -872,6 +915,13 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         {
             action.ChangedProperties.Add(StickAnalogEmulationAction.PropertyKeyStrings.DIRECTION_MODE);
             action.RaiseNotifyPropertyChange(mapper, StickAnalogEmulationAction.PropertyKeyStrings.DIRECTION_MODE);
+            IsEightWayDirectionResolutionChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void StickAnalogEmulationPropViewModel_DiagonalZoneWidthChanged(object sender, EventArgs e)
+        {
+            action.ChangedProperties.Add(StickAnalogEmulationAction.PropertyKeyStrings.DIAGONAL_ZONE_WIDTH);
+            action.RaiseNotifyPropertyChange(mapper, StickAnalogEmulationAction.PropertyKeyStrings.DIAGONAL_ZONE_WIDTH);
         }
 
         private void StickAnalogEmulationPropViewModel_DirectionPulseTimeMsChanged(object sender, EventArgs e)
