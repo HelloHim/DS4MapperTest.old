@@ -144,6 +144,20 @@ namespace DS4MapperTest.ViewModels
                     }
 
                     break;
+                case 8:
+                    {
+                        StickHybridAim tempAction = new StickHybridAim();
+                        result = tempAction;
+                    }
+
+                    break;
+                case 9:
+                    {
+                        StickMouseRing tempAction = new StickMouseRing();
+                        result = tempAction;
+                    }
+
+                    break;
                 default:
                     break;
             }

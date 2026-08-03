@@ -8503,6 +8503,298 @@ namespace DS4MapperTest
         }
     }
 
+    public class StickHybridAimActionSerializer : MapActionSerializer
+    {
+        public class StickHybridAimSettings
+        {
+            private StickHybridAim hybridAimAction;
+
+            public int StickSens
+            {
+                get => hybridAimAction.StickSens;
+                set
+                {
+                    hybridAimAction.StickSens = value;
+                    StickSensChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler StickSensChanged;
+
+            public double MouselikeFactor
+            {
+                get => hybridAimAction.MouselikeFactor;
+                set
+                {
+                    hybridAimAction.MouselikeFactor = value;
+                    MouselikeFactorChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler MouselikeFactorChanged;
+
+            public double DeadZone
+            {
+                get => hybridAimAction.DeadMod.DeadZone;
+                set
+                {
+                    hybridAimAction.DeadMod.DeadZone = value;
+                    DeadZoneChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler DeadZoneChanged;
+
+            public double MaxZone
+            {
+                get => hybridAimAction.DeadMod.MaxZone;
+                set
+                {
+                    hybridAimAction.DeadMod.MaxZone = value;
+                    MaxZoneChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler MaxZoneChanged;
+
+            [JsonConverter(typeof(SafeStringEnumConverter),
+                StickOutCurve.Curve.Linear)]
+            public StickOutCurve.Curve OutputCurve
+            {
+                get => hybridAimAction.OutputCurve;
+                set
+                {
+                    hybridAimAction.OutputCurve = value;
+                    OutputCurveChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler OutputCurveChanged;
+
+            public bool EdgePushEnabled
+            {
+                get => hybridAimAction.EdgePushEnabled;
+                set
+                {
+                    hybridAimAction.EdgePushEnabled = value;
+                    EdgePushEnabledChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler EdgePushEnabledChanged;
+
+            public bool ReturnDeadzoneEnabled
+            {
+                get => hybridAimAction.ReturnDeadzoneEnabled;
+                set
+                {
+                    hybridAimAction.ReturnDeadzoneEnabled = value;
+                    ReturnDeadzoneEnabledChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler ReturnDeadzoneEnabledChanged;
+
+            public double ReturnDeadzoneAngle
+            {
+                get => hybridAimAction.ReturnDeadzoneAngle;
+                set
+                {
+                    hybridAimAction.ReturnDeadzoneAngle = value;
+                    ReturnDeadzoneAngleChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler ReturnDeadzoneAngleChanged;
+
+            public double ReturnDeadzoneCutoffAngle
+            {
+                get => hybridAimAction.ReturnDeadzoneCutoffAngle;
+                set
+                {
+                    hybridAimAction.ReturnDeadzoneCutoffAngle = value;
+                    ReturnDeadzoneCutoffAngleChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler ReturnDeadzoneCutoffAngleChanged;
+
+            public StickHybridAimSettings(StickHybridAim hybridAimAction)
+            {
+                this.hybridAimAction = hybridAimAction;
+            }
+        }
+
+        private StickHybridAim hybridAimAction =
+            new StickHybridAim();
+
+        private StickHybridAimSettings settings;
+        public StickHybridAimSettings Settings { get => settings; set => settings = value; }
+
+        public StickHybridAimActionSerializer() : base()
+        {
+            mapAction = hybridAimAction;
+            settings = new StickHybridAimSettings(hybridAimAction);
+
+            NameChanged += StickHybridAimActionSerializer_NameChanged;
+            settings.StickSensChanged += Settings_StickSensChanged;
+            settings.MouselikeFactorChanged += Settings_MouselikeFactorChanged;
+            settings.DeadZoneChanged += Settings_DeadZoneChanged;
+            settings.MaxZoneChanged += Settings_MaxZoneChanged;
+            settings.OutputCurveChanged += Settings_OutputCurveChanged;
+            settings.EdgePushEnabledChanged += Settings_EdgePushEnabledChanged;
+            settings.ReturnDeadzoneEnabledChanged += Settings_ReturnDeadzoneEnabledChanged;
+            settings.ReturnDeadzoneAngleChanged += Settings_ReturnDeadzoneAngleChanged;
+            settings.ReturnDeadzoneCutoffAngleChanged += Settings_ReturnDeadzoneCutoffAngleChanged;
+        }
+
+        public StickHybridAimActionSerializer(ActionLayer tempLayer, MapAction action) :
+            base(tempLayer, action)
+        {
+            if (action is StickHybridAim temp)
+            {
+                hybridAimAction = temp;
+                mapAction = hybridAimAction;
+                settings = new StickHybridAimSettings(hybridAimAction);
+            }
+        }
+
+        private void StickHybridAimActionSerializer_NameChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.NAME);
+        }
+
+        private void Settings_StickSensChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.STICK_SENS);
+        }
+
+        private void Settings_MouselikeFactorChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.MOUSELIKE_FACTOR);
+        }
+
+        private void Settings_DeadZoneChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.DEAD_ZONE);
+        }
+
+        private void Settings_MaxZoneChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.MAX_ZONE);
+        }
+
+        private void Settings_OutputCurveChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.OUTPUT_CURVE);
+        }
+
+        private void Settings_EdgePushEnabledChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.EDGE_PUSH_ENABLED);
+        }
+
+        private void Settings_ReturnDeadzoneEnabledChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.RETURN_DEADZONE_ENABLED);
+        }
+
+        private void Settings_ReturnDeadzoneAngleChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.RETURN_DEADZONE_ANGLE);
+        }
+
+        private void Settings_ReturnDeadzoneCutoffAngleChanged(object sender, EventArgs e)
+        {
+            hybridAimAction.ChangedProperties.Add(StickHybridAim.PropertyKeyStrings.RETURN_DEADZONE_CUTOFF_ANGLE);
+        }
+    }
+
+    public class StickMouseRingActionSerializer : MapActionSerializer
+    {
+        public class StickMouseRingSettings
+        {
+            private StickMouseRing ringAction;
+
+            public double RingRadius
+            {
+                get => ringAction.RingRadius;
+                set
+                {
+                    ringAction.RingRadius = value;
+                    RingRadiusChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler RingRadiusChanged;
+
+            public double DeadZone
+            {
+                get => ringAction.DeadMod.DeadZone;
+                set
+                {
+                    ringAction.DeadMod.DeadZone = value;
+                    DeadZoneChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler DeadZoneChanged;
+
+            public double MaxZone
+            {
+                get => ringAction.DeadMod.MaxZone;
+                set
+                {
+                    ringAction.DeadMod.MaxZone = value;
+                    MaxZoneChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler MaxZoneChanged;
+
+            public StickMouseRingSettings(StickMouseRing ringAction)
+            {
+                this.ringAction = ringAction;
+            }
+        }
+
+        private StickMouseRing ringAction =
+            new StickMouseRing();
+
+        private StickMouseRingSettings settings;
+        public StickMouseRingSettings Settings { get => settings; set => settings = value; }
+
+        public StickMouseRingActionSerializer() : base()
+        {
+            mapAction = ringAction;
+            settings = new StickMouseRingSettings(ringAction);
+
+            NameChanged += StickMouseRingActionSerializer_NameChanged;
+            settings.RingRadiusChanged += Settings_RingRadiusChanged;
+            settings.DeadZoneChanged += Settings_DeadZoneChanged;
+            settings.MaxZoneChanged += Settings_MaxZoneChanged;
+        }
+
+        public StickMouseRingActionSerializer(ActionLayer tempLayer, MapAction action) :
+            base(tempLayer, action)
+        {
+            if (action is StickMouseRing temp)
+            {
+                ringAction = temp;
+                mapAction = ringAction;
+                settings = new StickMouseRingSettings(ringAction);
+            }
+        }
+
+        private void StickMouseRingActionSerializer_NameChanged(object sender, EventArgs e)
+        {
+            ringAction.ChangedProperties.Add(StickMouseRing.PropertyKeyStrings.NAME);
+        }
+
+        private void Settings_RingRadiusChanged(object sender, EventArgs e)
+        {
+            ringAction.ChangedProperties.Add(StickMouseRing.PropertyKeyStrings.RING_RADIUS);
+        }
+
+        private void Settings_DeadZoneChanged(object sender, EventArgs e)
+        {
+            ringAction.ChangedProperties.Add(StickMouseRing.PropertyKeyStrings.DEAD_ZONE);
+        }
+
+        private void Settings_MaxZoneChanged(object sender, EventArgs e)
+        {
+            ringAction.ChangedProperties.Add(StickMouseRing.PropertyKeyStrings.MAX_ZONE);
+        }
+    }
+
     public class StickTranslateSerializer : MapActionSerializer
     {
         public class StickTranslateSettings
@@ -11378,6 +11670,16 @@ namespace DS4MapperTest
                         StickFlickStickActionSerializer flickInstance = new StickFlickStickActionSerializer();
                         JsonConvert.PopulateObject(j.ToString(), flickInstance);
                         resultInstance = flickInstance;
+                        break;
+                    case "StickHybridAimAction":
+                        StickHybridAimActionSerializer hybridAimInstance = new StickHybridAimActionSerializer();
+                        JsonConvert.PopulateObject(j.ToString(), hybridAimInstance);
+                        resultInstance = hybridAimInstance;
+                        break;
+                    case "StickMouseRingAction":
+                        StickMouseRingActionSerializer mouseRingInstance = new StickMouseRingActionSerializer();
+                        JsonConvert.PopulateObject(j.ToString(), mouseRingInstance);
+                        resultInstance = mouseRingInstance;
                         break;
                     case "StickAnalogEmulationAction":
                         AnalogEmulationActionSerializer analogEmuInstance = new AnalogEmulationActionSerializer();
