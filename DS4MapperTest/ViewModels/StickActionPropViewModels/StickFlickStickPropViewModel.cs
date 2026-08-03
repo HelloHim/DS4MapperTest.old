@@ -39,6 +39,27 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         }
         public event EventHandler NameChanged;
 
+        public int SelectedSubModeIndex
+        {
+            get => (int)action.SubMode;
+            set
+            {
+                FlickStickSubMode subMode = (FlickStickSubMode)value;
+                if (action.SubMode == subMode) return;
+                action.SubMode = subMode;
+                SubModeChanged?.Invoke(this, EventArgs.Empty);
+                ActionPropertyChanged?.Invoke(this, EventArgs.Empty);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedSubModeIndex)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowFlickSettings)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowRotationSettings)));
+            }
+        }
+        public event EventHandler SubModeChanged;
+
+        public bool ShowFlickSettings => action.SubMode != FlickStickSubMode.RotateOnly;
+
+        public bool ShowRotationSettings => action.SubMode != FlickStickSubMode.FlickOnly;
+
         // --- Calibration fields (profile-level, synced across all actions) ---
 
         public CalibMode CalibMode
@@ -140,6 +161,7 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
                 if (mapper.ActionProfile.CalibInGameSens == value) return;
                 mapper.ActionProfile.CalibInGameSens = value;
                 if (IsCountsMode) CalculateRwcFromCounts();
+                if (!_applyingPreset) TryMatchPreset();
                 InGameSensChanged?.Invoke(this, EventArgs.Empty);
                 ActionPropertyChanged?.Invoke(this, EventArgs.Empty);
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(InGameSens)));
@@ -177,17 +199,25 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
                 _selectedPreset = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedPreset)));
                 if (value == null || value.IsCustom) return;
+
+                // A preset supplies the game's RWC. The measured 360-degree
+                // count total belongs to the user's mouse/game setup, so keep it
+                // unchanged and derive the sensitivity needed for that game.
+                if (FullTurnCounts <= 0.0) return;
                 _applyingPreset = true;
-                if (IsCountsMode)
-                {
-                    FullTurnCounts = value.RWC * 360.0 / InGameSens;
-                }
-                else
-                {
-                    InGameSens = value.InGameSens;
-                    RealWorldCalibration = value.RWC;
-                }
+                double preservedCounts = FullTurnCounts;
+                mapper.ActionProfile.CalibInGameSens = value.RWC * 360.0 / preservedCounts;
+                mapper.ActionProfile.CalibRwc = value.RWC;
+                fullTurnCounts = preservedCounts;
+                CalculateTestRWC();
+                SyncCalibToProfile();
                 _applyingPreset = false;
+
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(InGameSens)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RealWorldCalibration)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FullTurnCounts)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MasterCalibrationValue)));
+                ActionPropertyChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -286,6 +316,19 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         }
         public event EventHandler AccelerationMultiplierChanged;
 
+        public double RotateSmoothOverride
+        {
+            get => action.RotateSmoothOverride;
+            set
+            {
+                if (action.RotateSmoothOverride == value) return;
+                action.RotateSmoothOverride = value;
+                RotateSmoothOverrideChanged?.Invoke(this, EventArgs.Empty);
+                ActionPropertyChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        public event EventHandler RotateSmoothOverrideChanged;
+
         public bool HighlightReleaseDampeningSpeed
         {
             get => action.ParentAction == null ||
@@ -342,6 +385,13 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         }
         public event EventHandler HighlightMinAngleThresholdChanged;
 
+        public bool HighlightRotateSmoothOverride
+        {
+            get => action.ParentAction == null ||
+                action.ChangedProperties.Contains(StickFlickStick.PropertyKeyStrings.ROTATE_SMOOTH_OVERRIDE);
+        }
+        public event EventHandler HighlightRotateSmoothOverrideChanged;
+
         public event EventHandler ActionPropertyChanged;
         public event EventHandler<StickMapAction> ActionChanged;
 
@@ -380,6 +430,7 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
             });
 
             NameChanged += StickFlickStickPropViewModel_NameChanged;
+            SubModeChanged += StickFlickStickPropViewModel_SubModeChanged;
             FlickThresholdChanged += StickFlickStickPropViewModel_FlickThresholdChanged;
             FlickTimeChanged += StickFlickStickPropViewModel_FlickTimeChanged;
             FlickTimeExponentChanged += StickFlickStickPropViewModel_FlickTimeExponentChanged;
@@ -387,6 +438,7 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
             ReleaseDampeningSpeedChanged += StickFlickStickPropViewModel_ReleaseDampeningSpeedChanged;
             MultiplierCompensationChanged += StickFlickStickPropViewModel_MultiplierCompensationChanged;
             AccelerationMultiplierChanged += StickFlickStickPropViewModel_AccelerationMultiplierChanged;
+            RotateSmoothOverrideChanged += StickFlickStickPropViewModel_RotateSmoothOverrideChanged;
             mapper.ActionProfile.CalibModeChanged += ActionProfile_CalibModeChanged;
 
             double savedInGameSens = mapper.ActionProfile.CalibInGameSens;
@@ -413,6 +465,7 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
                             fullTurnCounts = savedCounts;
                             CalculateTestRWC();
                             _modelReady = true;
+                            TryMatchPreset();
                             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(InGameSens)));
                             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RealWorldCalibration)));
                             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FullTurnCounts)));
@@ -443,11 +496,9 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
         private void TryMatchPreset()
         {
             double rwc = mapper.ActionProfile.CalibRwc;
-            double sens = mapper.ActionProfile.CalibInGameSens;
             GameCalibPreset match = GameCalibPreset.All.FirstOrDefault(
                 p => !p.IsCustom &&
-                     Math.Abs(p.RWC - rwc) < 1e-3 &&
-                     Math.Abs(p.InGameSens - sens) < 1e-3);
+                     Math.Abs(p.RWC - rwc) < 1e-3);
             GameCalibPreset next = match ?? GameCalibPreset.Custom;
             if (_selectedPreset == next) return;
             _selectedPreset = next;
@@ -558,6 +609,17 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
             HighlightAccelerationMultiplierChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void StickFlickStickPropViewModel_RotateSmoothOverrideChanged(object sender, EventArgs e)
+        {
+            if (!action.ChangedProperties.Contains(StickFlickStick.PropertyKeyStrings.ROTATE_SMOOTH_OVERRIDE))
+            {
+                action.ChangedProperties.Add(StickFlickStick.PropertyKeyStrings.ROTATE_SMOOTH_OVERRIDE);
+            }
+
+            action.RaiseNotifyPropertyChange(mapper, StickFlickStick.PropertyKeyStrings.ROTATE_SMOOTH_OVERRIDE);
+            HighlightRotateSmoothOverrideChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         private void StickFlickStickPropViewModel_FlickTimeChanged(object sender, EventArgs e)
         {
             if (!action.ChangedProperties.Contains(StickFlickStick.PropertyKeyStrings.FLICK_TIME))
@@ -600,6 +662,16 @@ namespace DS4MapperTest.ViewModels.StickActionPropViewModels
 
             action.RaiseNotifyPropertyChange(mapper, StickFlickStick.PropertyKeyStrings.NAME);
             HighlightNameChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void StickFlickStickPropViewModel_SubModeChanged(object sender, EventArgs e)
+        {
+            if (!action.ChangedProperties.Contains(StickFlickStick.PropertyKeyStrings.SUB_MODE))
+            {
+                action.ChangedProperties.Add(StickFlickStick.PropertyKeyStrings.SUB_MODE);
+            }
+
+            action.RaiseNotifyPropertyChange(mapper, StickFlickStick.PropertyKeyStrings.SUB_MODE);
         }
 
         private void ReplaceExistingLayerAction(object sender, EventArgs e)

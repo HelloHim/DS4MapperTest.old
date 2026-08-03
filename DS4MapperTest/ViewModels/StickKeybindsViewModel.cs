@@ -97,6 +97,7 @@ namespace DS4MapperTest.ViewModels
                 settingsViewModel = value;
                 OnPropertyChanged(nameof(SettingsViewModel));
                 OnPropertyChanged(nameof(IsPadMode));
+                OnPropertyChanged(nameof(IsFlickStickMode));
                 OnPropertyChanged(nameof(CurrentModeDisplayName));
                 OnPropertyChanged(nameof(AdvancedPlaceholderText));
             }
@@ -104,6 +105,8 @@ namespace DS4MapperTest.ViewModels
 
         public bool IsPadMode => settingsViewModel is StickPadActionPropViewModel ||
             settingsViewModel is StickAnalogEmulationPropViewModel;
+
+        public bool IsFlickStickMode => settingsViewModel is StickFlickStickPropViewModel;
 
         public string CurrentModeDisplayName =>
             (sharedModeItems.FirstOrDefault(item => item.Index == selectedModeIndex)

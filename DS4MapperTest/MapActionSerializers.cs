@@ -6169,6 +6169,38 @@ namespace DS4MapperTest
     {
         public class FlickStickSettings
         {
+            public FlickStickSubMode SubMode
+            {
+                get => flickAction.SubMode;
+                set
+                {
+                    flickAction.SubMode = value;
+                    SubModeChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+
+            public double RotateSmoothOverride
+            {
+                get => flickAction.RotateSmoothOverride;
+                set
+                {
+                    flickAction.RotateSmoothOverride = value;
+                    RotateSmoothOverrideChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            public event EventHandler RotateSmoothOverrideChanged;
+
+            public bool ShouldSerializeRotateSmoothOverride()
+            {
+                return flickAction.ChangedProperties.Contains(StickFlickStick.PropertyKeyStrings.ROTATE_SMOOTH_OVERRIDE);
+            }
+            public event EventHandler SubModeChanged;
+
+            public bool ShouldSerializeSubMode()
+            {
+                return flickAction.ChangedProperties.Contains(StickFlickStick.PropertyKeyStrings.SUB_MODE);
+            }
+
             public double RealWorldCalibration
             {
                 get => flickAction.RealWorldCalibration;
@@ -6326,6 +6358,7 @@ namespace DS4MapperTest
             settings = new FlickStickSettings(flickAction);
 
             NameChanged += StickFlickStickActionSerializer_NameChanged;
+            settings.SubModeChanged += Settings_SubModeChanged;
             settings.RealWorldCalibrationChanged += Settings_RealWorldCalibrationChanged;
             settings.FlickThresholdChanged += Settings_FlickThresholdChanged;
             settings.FlickTimeChanged += Settings_FlickTimeChanged;
@@ -6335,6 +6368,7 @@ namespace DS4MapperTest
             settings.ReleaseDampeningSpeedChanged += Settings_ReleaseDampeningSpeedChanged;
             settings.MultiplierCompensationChanged += Settings_MultiplierCompensationChanged;
             settings.AccelerationMultiplierChanged += Settings_AccelerationMultiplierChanged;
+            settings.RotateSmoothOverrideChanged += Settings_RotateSmoothOverrideChanged;
         }
 
         public StickFlickStickActionSerializer(ActionLayer tempLayer, MapAction action) :
@@ -6351,6 +6385,11 @@ namespace DS4MapperTest
         private void StickFlickStickActionSerializer_NameChanged(object sender, EventArgs e)
         {
             flickAction.ChangedProperties.Add(StickFlickStick.PropertyKeyStrings.NAME);
+        }
+
+        private void Settings_SubModeChanged(object sender, EventArgs e)
+        {
+            flickAction.ChangedProperties.Add(StickFlickStick.PropertyKeyStrings.SUB_MODE);
         }
 
         private void Settings_RealWorldCalibrationChanged(object sender, EventArgs e)
@@ -6396,6 +6435,11 @@ namespace DS4MapperTest
         private void Settings_AccelerationMultiplierChanged(object sender, EventArgs e)
         {
             flickAction.ChangedProperties.Add(StickFlickStick.PropertyKeyStrings.ACCELERATION_MULTIPLIER);
+        }
+
+        private void Settings_RotateSmoothOverrideChanged(object sender, EventArgs e)
+        {
+            flickAction.ChangedProperties.Add(StickFlickStick.PropertyKeyStrings.ROTATE_SMOOTH_OVERRIDE);
         }
     }
 

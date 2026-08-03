@@ -2749,6 +2749,8 @@ namespace DS4MapperTest.ViewModels
             mappedAction is TouchpadStickAction ||
             mappedAction is TouchpadFlickStick;
 
+        public bool IsRelativeMouseAction => mappedAction is TouchpadMouse;
+
         public bool IsSensitivityCalibrationAction =>
             mappedAction is TouchpadMouse ||
             mappedAction is TouchpadMouseJoystick ||
@@ -2834,6 +2836,7 @@ namespace DS4MapperTest.ViewModels
             OnPropertyChanged(nameof(ActionSummary));
             OnPropertyChanged(nameof(BindingStatus));
             OnPropertyChanged(nameof(IsMouseMovementAction));
+            OnPropertyChanged(nameof(IsRelativeMouseAction));
             OnPropertyChanged(nameof(IsSensitivityCalibrationAction));
             OnPropertyChanged(nameof(IsFilteringStabilisationAction));
             OnPropertyChanged(nameof(IsZoneAction));
