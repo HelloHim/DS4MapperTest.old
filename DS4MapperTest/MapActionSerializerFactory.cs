@@ -43,6 +43,9 @@ namespace DS4MapperTest
                 case "StickHybridAimAction":
                     serializer = new StickHybridAimActionSerializer(layer, action);
                     break;
+                case "StickMouseRingAction":
+                    serializer = new StickMouseRingActionSerializer(layer, action);
+                    break;
                 case "StickAnalogEmulationAction":
                     serializer = new AnalogEmulationActionSerializer(layer, action);
                     break;
