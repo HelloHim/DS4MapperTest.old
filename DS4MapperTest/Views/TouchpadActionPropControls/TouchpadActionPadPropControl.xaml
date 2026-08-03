@@ -594,7 +594,7 @@
                                Style="{StaticResource JsmccLabelText}"/>
                     <StackPanel Grid.Column="1">
                         <WrapPanel>
-                            <Border Background="{DynamicResource JsmccBgInputBrush}"
+                            <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                     BorderBrush="{DynamicResource JsmccBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="4"
@@ -610,7 +610,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="{DynamicResource JsmccBgInputBrush}"
+                            <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                     BorderBrush="{DynamicResource JsmccBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="4"

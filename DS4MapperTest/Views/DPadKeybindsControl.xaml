@@ -250,7 +250,7 @@
                                                            Grid.Column="0"
                                                            Grid.ColumnSpan="3"
                                                            Margin="0,10,0,0">
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -265,7 +265,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -280,7 +280,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -303,7 +303,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -326,7 +326,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -349,7 +349,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -372,7 +372,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -387,7 +387,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -406,7 +406,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -425,7 +425,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -444,7 +444,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -467,7 +467,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -486,7 +486,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
@@ -502,7 +502,7 @@
                                                         </StackPanel>
                                                     </Border>
 
-                                                    <Border Background="{DynamicResource JsmccBgInputBrush}"
+                                                    <Border Background="{DynamicResource JsmccBgFieldGroupBrush}"
                                                             BorderBrush="{DynamicResource JsmccBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="4"
