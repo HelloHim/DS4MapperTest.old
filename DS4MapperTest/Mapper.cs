@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -230,7 +229,6 @@ namespace DS4MapperTest
         public VirtualKBMMapping EventInputMapping => eventInputMapping;
 
         protected ViGEmClient vigemTestClient = null;
-        //protected IXbox360Controller outputX360 = null;
         protected IVirtualGamepad outputController = null;
         protected OutputContType outputControlType = OutputContType.None;
         protected Xbox360FeedbackReceivedEventHandler outputForceFeedbackDel;
@@ -312,7 +310,6 @@ namespace DS4MapperTest
         private static readonly object mouseButtonRefLock = new object();
 
         protected bool hasInputEvts;
-        //protected object eventQueueLock = new object();
         protected ReaderWriterLockSlim eventQueueLocker = new ReaderWriterLockSlim();
         protected Queue<Action> eventQueue = new Queue<Action>();
 
@@ -353,15 +350,9 @@ namespace DS4MapperTest
                 tempMappings = profileSerializer.ActionMappings;
             }
 
-            //tempProfile.LeftTouchpadRotation = device.DeviceOptions.LeftTouchpadRotation;
-            //tempProfile.RightTouchpadRotation = device.DeviceOptions.RightTouchpadRotation;
-
             // Populate ActionLayer dicts with default no action elements
             foreach (ActionSet set in tempProfile.ActionSets)
             {
-                //ActionLayer layer = set.ActionLayers.First();
-                //if (layer != null)
-
                 int layerIndex = 0;
                 foreach (ActionLayer layer in set.ActionLayers)
                 {
@@ -478,7 +469,6 @@ namespace DS4MapperTest
 
                     if (tempLayer != null)
                     {
-                        //ActionLayer parentLayer = (mapping.ActionLayer > 0 && mapping.ActionLayer < tempLayer.LayerActions.Count) ? tempLayer : null;
                         ActionLayer parentLayer = tempLayer != tempSet.DefaultActionLayer ? tempSet.DefaultActionLayer : null;
                         foreach (LayerMapping layerMapping in mapping.LayerMappings)
                         {
@@ -486,7 +476,6 @@ namespace DS4MapperTest
                                 tempLayer.LayerActions.Find((act) => act.Id == layerMapping.ActionIndex) : null;
                             if (tempAction != null)// layerMapping.ActionIndex < tempLayer.LayerActions.Count)
                             {
-                                //MapAction tempAction = tempLayer.LayerActions[layerMapping.ActionIndex];
                                 if (bindingDict.TryGetValue(layerMapping.InputBinding, out InputBindingMeta tempBind))
                                 {
                                     switch (tempBind.controlType)
@@ -494,31 +483,17 @@ namespace DS4MapperTest
                                         case InputBindingMeta.InputControlType.Button:
                                             if (tempAction is ButtonMapAction)
                                             {
-                                                //tempAction.DefaultUnbound = false;
+                                                // Unlike every other control type below, button
+                                                // actions deliberately do not soft-copy from the
+                                                // parent layer.
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-                                                if (parentLayer != null && parentLayer.buttonActionDict.TryGetValue(tempBind.id, out ButtonMapAction tempParentBtnAction) &&
-                                                    MapAction.IsSameType(tempAction, tempParentBtnAction))
-                                                {
-                                                    //(tempAction as ButtonMapAction).SoftCopyFromParent(tempParentBtnAction);
-                                                    //(tempAction as ButtonMapAction).CopyAction(tempParentBtnAction);
-                                                }
-
-                                                //if (parentLayer != null && parentLayer.LayerActions[layerMapping.ActionIndex] is ButtonMapAction)
-                                                //{
-                                                //    tempLayer.buttonActionDict[tempBind.id] = (tempAction as ButtonMapAction).DuplicateAction();
-                                                //}
-                                                //else
-                                                //{
-                                                //    tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-                                                //}
                                             }
 
                                             break;
                                         case InputBindingMeta.InputControlType.DPad:
                                             if (tempAction is DPadMapAction)
                                             {
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.dpadActionDict[tempBind.id] = tempAction as DPadMapAction;
                                                 if (parentLayer != null && parentLayer.dpadActionDict.TryGetValue(tempBind.id, out DPadMapAction tempParentDpadAction) &&
@@ -539,7 +514,6 @@ namespace DS4MapperTest
                                                     tempStickAction.StickDefinition = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.stickActionDict[tempBind.id] = tempStickAction;
 
@@ -560,7 +534,6 @@ namespace DS4MapperTest
                                                     triggerAct.TriggerDef = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.triggerActionDict[tempBind.id] = tempAction as TriggerMapAction;
                                                 if (parentLayer != null && parentLayer.triggerActionDict.TryGetValue(tempBind.id, out TriggerMapAction tempParentTrigAction) &&
@@ -580,7 +553,6 @@ namespace DS4MapperTest
                                                     touchAct.TouchDefinition = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.touchpadActionDict[tempBind.id] = tempAction as TouchpadMapAction;
                                                 if (parentLayer != null && parentLayer.touchpadActionDict.TryGetValue(tempBind.id, out TouchpadMapAction tempParentTouchAction) &&
@@ -602,7 +574,6 @@ namespace DS4MapperTest
                                                     touchAct.TouchDefinition = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.touchpadActionDict[tempBind.id] = tempAction as TouchpadMapAction;
                                                 if (parentLayer != null && parentLayer.touchpadActionDict.TryGetValue(tempBind.id, out TouchpadMapAction tempParentTouchAction) &&
@@ -619,13 +590,11 @@ namespace DS4MapperTest
                                             if (tempAction is GyroMapAction)
                                             {
                                                 GyroMapAction gyroAction = tempAction as GyroMapAction;
-                                                //if (tempBind.id == "Gyro")
                                                 if (knownGyroSensDefinitions.TryGetValue(tempBind.id, out GyroSensDefinition tempDef))
                                                 {
                                                     gyroAction.GyroSensDefinition = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.gyroActionDict[tempBind.id] = tempAction as GyroMapAction;
                                                 if (parentLayer != null && parentLayer.gyroActionDict.TryGetValue(tempBind.id, out GyroMapAction tempParentGyroAction) &&
@@ -642,27 +611,11 @@ namespace DS4MapperTest
                                 }
                                 else if (layerMapping.InputBinding == $"{ActionSet.ACTION_SET_ACTION_PREFIX}{mapping.ActionSet}" && tempAction is ButtonMapAction)
                                 {
-                                    //if (tempAction is ButtonMapAction)
-                                    {
-                                        //tempAction.DefaultUnbound = false;
-                                        tempAction.MappingId = $"{ActionSet.ACTION_SET_ACTION_PREFIX}{mapping.ActionSet}";
-                                        tempLayer.actionSetActionDict[tempAction.MappingId] = tempAction as ButtonMapAction;
-                                        if (parentLayer != null && parentLayer.actionSetActionDict.TryGetValue(tempAction.MappingId, out ButtonMapAction tempParentBtnAction) &&
-                                            MapAction.IsSameType(tempAction, tempParentBtnAction))
-                                        {
-                                            //(tempAction as ButtonMapAction).SoftCopyFromParent(tempParentBtnAction);
-                                            //(tempAction as ButtonMapAction).CopyAction(tempParentBtnAction);
-                                        }
-
-                                        //if (parentLayer != null && parentLayer.LayerActions[layerMapping.ActionIndex] is ButtonMapAction)
-                                        //{
-                                        //    tempLayer.buttonActionDict[tempBind.id] = (tempAction as ButtonMapAction).DuplicateAction();
-                                        //}
-                                        //else
-                                        //{
-                                        //    tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-                                        //}
-                                    }
+                                    // Action set actions are button actions, and like the
+                                    // button bindings above they deliberately do not
+                                    // soft-copy from the parent layer.
+                                    tempAction.MappingId = $"{ActionSet.ACTION_SET_ACTION_PREFIX}{mapping.ActionSet}";
+                                    tempLayer.actionSetActionDict[tempAction.MappingId] = tempAction as ButtonMapAction;
                                 }
                             }
                         }
@@ -673,31 +626,11 @@ namespace DS4MapperTest
 
             MigrateLegacyTouchpadClickBindings(tempProfile);
 
-            //tempProfile.CurrentActionSet.CreateDupActionLayer();
-            //tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-            //(tempProfile.CurrentActionSet.ActionLayers[1].buttonActionDict["A"] as ButtonAction).ActionFuncs.Clear();
-            //(tempProfile.CurrentActionSet.ActionLayers[1].buttonActionDict["A"] as ButtonAction).ActionFuncs.Add(new NormalPressFunc(new OutputActionData(OutputActionData.ActionType.Keyboard, KeyInterop.VirtualKeyFromKey(Key.L))));
-            //new ButtonAction(new OutputActionData(OutputActionData.ActionType.Keyboard, KeyInterop.VirtualKeyFromKey(Key.L)));
-
-            // SyncActions for currently active ActionLayer instance
-            //foreach (ActionSet set in tempProfile.ActionSets)
-            //{
-            //    set.CurrentActionLayer.SyncActions();
-            //}
-
             // Compile convenience List for MapActions instances in layers
             foreach (ActionSet set in tempProfile.ActionSets)
             {
-                //int layerIdx = -1;
-                ActionLayer parentLayer = set.DefaultActionLayer;
                 foreach (ActionLayer layer in set.ActionLayers)
                 {
-                    //layerIdx++;
-                    //if (layerIdx > 0)
-                    //{
-                    //    parentLayer.MergeLayerActions(layer);
-                    //}
-
                     layer.SyncActions();
                 }
             }
@@ -706,12 +639,9 @@ namespace DS4MapperTest
             // base ActionLayer references
             foreach (ActionSet set in tempProfile.ActionSets)
             {
-                //ActionLayer parentLayer = set.DefaultActionLayer;
                 set.ClearCompositeLayerActions();
                 set.PrepareCompositeLayer();
             }
-
-            //tempProfile.CurrentActionSet.SwitchActionLayer(this, 1);
         }
 
         // Steam Controller 2 previously drove LeftPadClick/RightPadClick purely off the
@@ -774,7 +704,6 @@ namespace DS4MapperTest
             Profile tempProfile = actionProfile;
             profileFile = string.Empty;
 
-            //tempProfile.ActionSets.Clear();
             PrepareProfileActions(null);
         }
 
@@ -785,9 +714,6 @@ namespace DS4MapperTest
             // Populate ActionLayer dicts with default no action elements
             foreach (ActionSet set in tempProfile.ActionSets)
             {
-                //ActionLayer layer = set.ActionLayers.First();
-                //if (layer != null)
-
                 int layerIndex = 0;
                 foreach (ActionLayer layer in set.ActionLayers)
                 {
@@ -902,7 +828,6 @@ namespace DS4MapperTest
 
                     if (tempLayer != null)
                     {
-                        //ActionLayer parentLayer = (mapping.ActionLayer > 0 && mapping.ActionLayer < tempLayer.LayerActions.Count) ? tempLayer : null;
                         ActionLayer parentLayer = tempLayer != tempSet.DefaultActionLayer ? tempSet.DefaultActionLayer : null;
                         foreach (LayerMapping layerMapping in mapping.LayerMappings)
                         {
@@ -910,7 +835,6 @@ namespace DS4MapperTest
                                 tempLayer.LayerActions.Find((act) => act.Id == layerMapping.ActionIndex) : null;
                             if (tempAction != null)// layerMapping.ActionIndex < tempLayer.LayerActions.Count)
                             {
-                                //MapAction tempAction = tempLayer.LayerActions[layerMapping.ActionIndex];
                                 if (bindingDict.TryGetValue(layerMapping.InputBinding, out InputBindingMeta tempBind))
                                 {
                                     switch (tempBind.controlType)
@@ -918,31 +842,17 @@ namespace DS4MapperTest
                                         case InputBindingMeta.InputControlType.Button:
                                             if (tempAction is ButtonMapAction)
                                             {
-                                                //tempAction.DefaultUnbound = false;
+                                                // Unlike every other control type below, button
+                                                // actions deliberately do not soft-copy from the
+                                                // parent layer.
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-                                                if (parentLayer != null && parentLayer.buttonActionDict.TryGetValue(tempBind.id, out ButtonMapAction tempParentBtnAction) &&
-                                                    MapAction.IsSameType(tempAction, tempParentBtnAction))
-                                                {
-                                                    //(tempAction as ButtonMapAction).SoftCopyFromParent(tempParentBtnAction);
-                                                    //(tempAction as ButtonMapAction).CopyAction(tempParentBtnAction);
-                                                }
-
-                                                //if (parentLayer != null && parentLayer.LayerActions[layerMapping.ActionIndex] is ButtonMapAction)
-                                                //{
-                                                //    tempLayer.buttonActionDict[tempBind.id] = (tempAction as ButtonMapAction).DuplicateAction();
-                                                //}
-                                                //else
-                                                //{
-                                                //    tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-                                                //}
                                             }
 
                                             break;
                                         case InputBindingMeta.InputControlType.DPad:
                                             if (tempAction is DPadMapAction)
                                             {
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.dpadActionDict[tempBind.id] = tempAction as DPadMapAction;
                                                 if (parentLayer != null && parentLayer.dpadActionDict.TryGetValue(tempBind.id, out DPadMapAction tempParentDpadAction) &&
@@ -962,7 +872,6 @@ namespace DS4MapperTest
                                                     tempStickAction.StickDefinition = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.stickActionDict[tempBind.id] = tempStickAction;
 
@@ -983,7 +892,6 @@ namespace DS4MapperTest
                                                     triggerAct.TriggerDef = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.triggerActionDict[tempBind.id] = tempAction as TriggerMapAction;
                                                 if (parentLayer != null && parentLayer.triggerActionDict.TryGetValue(tempBind.id, out TriggerMapAction tempParentTrigAction) &&
@@ -1003,7 +911,6 @@ namespace DS4MapperTest
                                                     touchAct.TouchDefinition = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.touchpadActionDict[tempBind.id] = tempAction as TouchpadMapAction;
                                                 if (parentLayer != null && parentLayer.touchpadActionDict.TryGetValue(tempBind.id, out TouchpadMapAction tempParentTouchAction) &&
@@ -1020,13 +927,11 @@ namespace DS4MapperTest
                                             if (tempAction is GyroMapAction)
                                             {
                                                 GyroMapAction gyroAction = tempAction as GyroMapAction;
-                                                //if (tempBind.id == "Gyro")
                                                 if (knownGyroSensDefinitions.TryGetValue(tempBind.id, out GyroSensDefinition tempDef))
                                                 {
                                                     gyroAction.GyroSensDefinition = tempDef;
                                                 }
 
-                                                //tempAction.DefaultUnbound = false;
                                                 tempAction.MappingId = tempBind.id;
                                                 tempLayer.gyroActionDict[tempBind.id] = tempAction as GyroMapAction;
                                                 if (parentLayer != null && parentLayer.gyroActionDict.TryGetValue(tempBind.id, out GyroMapAction tempParentGyroAction) &&
@@ -1043,27 +948,11 @@ namespace DS4MapperTest
                                 }
                                 else if (layerMapping.InputBinding == $"{ActionSet.ACTION_SET_ACTION_PREFIX}{mapping.ActionSet}" && tempAction is ButtonMapAction)
                                 {
-                                    //if (tempAction is ButtonMapAction)
-                                    {
-                                        //tempAction.DefaultUnbound = false;
-                                        tempAction.MappingId = $"{ActionSet.ACTION_SET_ACTION_PREFIX}{mapping.ActionSet}";
-                                        tempLayer.actionSetActionDict[tempAction.MappingId] = tempAction as ButtonMapAction;
-                                        if (parentLayer != null && parentLayer.actionSetActionDict.TryGetValue(tempAction.MappingId, out ButtonMapAction tempParentBtnAction) &&
-                                            MapAction.IsSameType(tempAction, tempParentBtnAction))
-                                        {
-                                            //(tempAction as ButtonMapAction).SoftCopyFromParent(tempParentBtnAction);
-                                            //(tempAction as ButtonMapAction).CopyAction(tempParentBtnAction);
-                                        }
-
-                                        //if (parentLayer != null && parentLayer.LayerActions[layerMapping.ActionIndex] is ButtonMapAction)
-                                        //{
-                                        //    tempLayer.buttonActionDict[tempBind.id] = (tempAction as ButtonMapAction).DuplicateAction();
-                                        //}
-                                        //else
-                                        //{
-                                        //    tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-                                        //}
-                                    }
+                                    // Action set actions are button actions, and like the
+                                    // button bindings above they deliberately do not
+                                    // soft-copy from the parent layer.
+                                    tempAction.MappingId = $"{ActionSet.ACTION_SET_ACTION_PREFIX}{mapping.ActionSet}";
+                                    tempLayer.actionSetActionDict[tempAction.MappingId] = tempAction as ButtonMapAction;
                                 }
                             }
                         }
@@ -1072,31 +961,11 @@ namespace DS4MapperTest
                 }
             }
 
-            //tempProfile.CurrentActionSet.CreateDupActionLayer();
-            //tempLayer.buttonActionDict[tempBind.id] = tempAction as ButtonMapAction;
-            //(tempProfile.CurrentActionSet.ActionLayers[1].buttonActionDict["A"] as ButtonAction).ActionFuncs.Clear();
-            //(tempProfile.CurrentActionSet.ActionLayers[1].buttonActionDict["A"] as ButtonAction).ActionFuncs.Add(new NormalPressFunc(new OutputActionData(OutputActionData.ActionType.Keyboard, KeyInterop.VirtualKeyFromKey(Key.L))));
-            //new ButtonAction(new OutputActionData(OutputActionData.ActionType.Keyboard, KeyInterop.VirtualKeyFromKey(Key.L)));
-
-            // SyncActions for currently active ActionLayer instance
-            //foreach (ActionSet set in tempProfile.ActionSets)
-            //{
-            //    set.CurrentActionLayer.SyncActions();
-            //}
-
             // Compile convenience List for MapActions instances in layers
             foreach (ActionSet set in tempProfile.ActionSets)
             {
-                //int layerIdx = -1;
-                ActionLayer parentLayer = set.DefaultActionLayer;
                 foreach (ActionLayer layer in set.ActionLayers)
                 {
-                    //layerIdx++;
-                    //if (layerIdx > 0)
-                    //{
-                    //    parentLayer.MergeLayerActions(layer);
-                    //}
-
                     layer.SyncActions();
                 }
             }
@@ -1105,14 +974,9 @@ namespace DS4MapperTest
             // base ActionLayer references
             foreach (ActionSet set in tempProfile.ActionSets)
             {
-                //ActionLayer parentLayer = set.DefaultActionLayer;
                 set.ClearCompositeLayerActions();
                 set.PrepareCompositeLayer();
             }
-
-            //tempProfile.CurrentActionSet.SwitchActionLayer(this, 1);
-
-            Trace.WriteLine("IT IS FINISHED");
         }
 
         public void PrepopulateBlankActionLayer(ActionLayer layer)
@@ -1192,12 +1056,6 @@ namespace DS4MapperTest
         {
             //if (!inMapperEvent)
             {
-                //if (calibrationFinished)
-                //{
-                //    // Disconnect event
-                //    reader.Report -= ControllerReader_Report;
-                //}
-
                 // Reset actions from current profile
                 actionProfile.CurrentActionSet.ReleaseActions(this, true);
 
@@ -1301,49 +1159,6 @@ namespace DS4MapperTest
                 }
 
                 PostProfileChange?.Invoke(this, EventArgs.Empty);
-
-                //if (outputController != null)
-                //{
-                //    if (actionProfile.OutputGamepadSettings.ForceFeedbackEnabled &&
-                //        outputForceFeedbackDel == null)
-                //    {
-                //        outputForceFeedbackDel = (sender, e) =>
-                //        {
-                //            device.currentLeftAmpRatio = e.LargeMotor / 255.0;
-                //            device.currentRightAmpRatio = e.SmallMotor / 255.0;
-                //            reader.WriteRumbleReport();
-                //        };
-
-                //        outputX360.FeedbackReceived += outputForceFeedbackDel;
-                //    }
-                //    else if (!actionProfile.OutputGamepadSettings.ForceFeedbackEnabled &&
-                //        outputForceFeedbackDel != null)
-                //    {
-                //        outputX360.FeedbackReceived -= outputForceFeedbackDel;
-                //        outputForceFeedbackDel = null;
-                //    }
-                //}
-
-                //if (calibrationFinished)
-                //{
-                //    // Re-connect event
-                //    reader.Report += ControllerReader_Report;
-                //}
-
-                //ProfileChanged?.Invoke(this, profilePath);
-
-                //ProfileSerializer profileSerializer = new ProfileSerializer(actionProfile);
-                //string tempOutJson = JsonConvert.SerializeObject(profileSerializer, Formatting.Indented,
-                //    new JsonSerializerSettings()
-                //    {
-                //        //Converters = new List<JsonConverter>()
-                //        //{
-                //        //    new MapActionSubTypeConverter(),
-                //        //}
-                //        //TypeNameHandling = TypeNameHandling.Objects
-                //        //ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                //    });
-                //Trace.WriteLine(tempOutJson);
             }
         }
 
@@ -1380,8 +1195,6 @@ namespace DS4MapperTest
 #if !MAKE_TESTS
                         eventInputHandler.PerformKeyRelease(vk);
 #endif
-                        //keyboardReport.KeyUp((KeyboardKey)vk);
-                        //InputMethods.performKeyRelease((ushort)vk);
                         keyReferenceCountDict.Remove(vk);
                     }
                     else
@@ -1398,8 +1211,6 @@ namespace DS4MapperTest
 #if !MAKE_TESTS
                     eventInputHandler.PerformKeyPress(vk);
 #endif
-                    //keyboardReport.KeyDown((KeyboardKey)vk);
-                    //InputMethods.performKeyPress((ushort)vk);
                     keyReferenceCountDict.Add(vk, 1);
                 }
                 else
@@ -1561,13 +1372,6 @@ namespace DS4MapperTest
             ref Rect absDisplayBounds, ref Rect fullDesktopBounds,
             out double outX, out double outY)
         {
-            //outX = outY = 0.0;
-            //int topLeftX = (int)absDisplayBounds.Left;
-            //double testLeft = 0.0;
-            //double testRight = 0.0;
-            //double testTop = 0.0;
-            //double testBottom = 0.0;
-
             double widthRatio = (absDisplayBounds.Left + absDisplayBounds.Right) / fullDesktopBounds.Width;
             double heightRatio = (absDisplayBounds.Top + absDisplayBounds.Bottom) / fullDesktopBounds.Height;
             double bX = absDisplayBounds.Left / fullDesktopBounds.Width;
@@ -1575,8 +1379,6 @@ namespace DS4MapperTest
 
             outX = widthRatio * inX + bX;
             outY = heightRatio * inY + bY;
-            //outX = (absDisplayBounds.TopRight.X - absDisplayBounds.TopLeft.X) * inX + absDisplayBounds.TopLeft.X;
-            //outY = (absDisplayBounds.BottomRight.Y - absDisplayBounds.TopLeft.Y) * inY + absDisplayBounds.TopLeft.Y;
         }
 
 
@@ -1602,16 +1404,6 @@ namespace DS4MapperTest
                     mouseYRemainder = 0.0;
                 }
 
-                //mouseX = filterX.Filter(mouseX, 1.0 / 0.016);
-                //mouseY = filterY.Filter(mouseY, 1.0 / 0.016);
-                //mouseX = filterX.Filter(mouseX, currentRate);
-                //mouseY = filterY.Filter(mouseY, currentRate);
-
-                //// Filter does not go back to absolute zero for reasons.Check
-                //// for low number and reset to zero
-                //if (Math.Abs(mouseX) < 0.0001) mouseX = 0.0;
-                //if (Math.Abs(mouseY) < 0.0001) mouseY = 0.0;
-
                 double mouseXTemp = mouseX - (remainderCutoff(mouseX * 100.0, 1.0) / 100.0);
                 int mouseXInt = (int)(mouseXTemp);
                 mouseXRemainder = mouseXTemp - mouseXInt;
@@ -1620,17 +1412,10 @@ namespace DS4MapperTest
                 int mouseYInt = (int)(mouseYTemp);
                 mouseYRemainder = mouseYTemp - mouseYInt;
                 eventInputHandler.MoveRelativeMouse(mouseXInt, mouseYInt);
-                //mouseReport.MouseX = (short)mouseXInt;
-                //mouseReport.MouseY = (short)mouseYInt;
-                //InputMethods.MoveCursorBy(mouseXInt, mouseYInt);
             }
             else
             {
                 mouseXRemainder = mouseYRemainder = 0.0;
-                //mouseX = filterX.Filter(0.0, 1.0 / 0.016);
-                //mouseY = filterY.Filter(0.0, 1.0 / 0.016);
-                //filterX.Filter(mouseX, currentRate);
-                //filterY.Filter(mouseY, currentRate);
             }
 
             mouseX = mouseY = 0.0;
@@ -1659,12 +1444,10 @@ namespace DS4MapperTest
                     mouseYRemainder = 0.0;
                 }
 
-                //mouseX = filterX.Filter(mouseX, 1.0 / 0.016);
-                //mouseY = filterY.Filter(mouseY, 1.0 / 0.016);
                 mouseX = filterX.Filter(mouseX, currentRate);
                 mouseY = filterY.Filter(mouseY, currentRate);
 
-                // Filter does not go back to absolute zero for reasons.Check
+                // Filter does not go back to absolute zero for reasons. Check
                 // for low number and reset to zero
                 if (Math.Abs(mouseX) < 0.0001) mouseX = 0.0;
                 if (Math.Abs(mouseY) < 0.0001) mouseY = 0.0;
@@ -1677,15 +1460,10 @@ namespace DS4MapperTest
                 int mouseYInt = (int)(mouseYTemp);
                 mouseYRemainder = mouseYTemp - mouseYInt;
                 eventInputHandler.MoveRelativeMouse(mouseXInt, mouseYInt);
-                //mouseReport.MouseX = (short)mouseXInt;
-                //mouseReport.MouseY = (short)mouseYInt;
-                //InputMethods.MoveCursorBy(mouseXInt, mouseYInt);
             }
             else
             {
                 mouseXRemainder = mouseYRemainder = 0.0;
-                //mouseX = filterX.Filter(0.0, 1.0 / 0.016);
-                //mouseY = filterY.Filter(0.0, 1.0 / 0.016);
                 filterX.Filter(mouseX, currentRate);
                 filterY.Filter(mouseY, currentRate);
             }
@@ -1699,74 +1477,25 @@ namespace DS4MapperTest
         {
             if (mouseX != 0.0 || mouseY != 0.0)
             {
-                //if ((mouseX > 0.0 && mouseXRemainder > 0.0) || (mouseX < 0.0 && mouseXRemainder < 0.0))
-                //{
-                //    mouseX += mouseXRemainder;
-                //}
-                //else
-                //{
-                //    mouseXRemainder = 0.0;
-                //}
-
-                //if ((mouseY > 0.0 && mouseYRemainder > 0.0) || (mouseY < 0.0 && mouseYRemainder < 0.0))
-                //{
-                //    mouseY += mouseYRemainder;
-                //}
-                //else
-                //{
-                //    mouseYRemainder = 0.0;
-                //}
-
-                //mouseX = filterX.Filter(mouseX, 1.0 / 0.016);
-                //mouseY = filterY.Filter(mouseY, 1.0 / 0.016);
                 mouseX = filterX.Filter(mouseX, currentRate);
                 mouseY = filterY.Filter(mouseY, currentRate);
 
-                // Filter does not go back to absolute zero for reasons.Check
+                // Filter does not go back to absolute zero for reasons. Check
                 // for low number and reset to zero
                 if (Math.Abs(mouseX) < 0.0001) mouseX = 0.0;
                 if (Math.Abs(mouseY) < 0.0001) mouseY = 0.0;
-
-                //double mouseXTemp = mouseX - (remainderCutoff(mouseX * 100.0, 1.0) / 100.0);
-                //int mouseXInt = (int)(mouseXTemp);
-                //mouseXRemainder = mouseXTemp - mouseXInt;
-
-                //double mouseYTemp = mouseY - (remainderCutoff(mouseY * 100.0, 1.0) / 100.0);
-                //int mouseYInt = (int)(mouseYTemp);
-                //mouseYRemainder = mouseYTemp - mouseYInt;
-
-                //eventInputHandler.MoveRelativeMouse(mouseXInt, mouseYInt);
-
-                //mouseReport.MouseX = (short)mouseXInt;
-                //mouseReport.MouseY = (short)mouseYInt;
-                //InputMethods.MoveCursorBy(mouseXInt, mouseYInt);
             }
             else
             {
-                //mouseXRemainder = mouseYRemainder = 0.0;
-                //mouseX = filterX.Filter(0.0, 1.0 / 0.016);
-                //mouseY = filterY.Filter(0.0, 1.0 / 0.016);
                 filterX.Filter(mouseX, currentRate);
                 filterY.Filter(mouseY, currentRate);
             }
-
-            //mouseX = mouseY = 0.0;
         }
 
         public double remainderCutoff(double dividend, double divisor)
         {
             return dividend - (divisor * (int)(dividend / divisor));
         }
-
-        //protected short AxisScale(int value, bool flip)
-        //{
-        //    unchecked
-        //    {
-        //        float temp = (value - STICK_MIN) * reciprocalInputResolution;
-        //        if (flip) temp = (temp - 0.5f) * -1.0f + 0.5f;
-        //        return (short)(temp * OUTPUT_X360_RESOLUTION + X360_STICK_MIN);
-        //    }
-        //}
 
         public virtual ref TouchEventFrame GetPreviousTouchEventFrame(TouchpadActionCodes padID)
         {
@@ -1786,25 +1515,21 @@ namespace DS4MapperTest
                         switch (actionData.OutputCode)
                         {
                             case 1: // Wheel Up
-                                    //vWheel = 120;
                                 vWheel = (int)(1 * absValue);
                                 mouseWheelY = vWheel;
                                 mouseWheelSync = true;
                                 break;
                             case 2: // Wheel Down
-                                    //vWheel = -120;
                                 vWheel = (int)(-1 * absValue);
                                 mouseWheelY = vWheel;
                                 mouseWheelSync = true;
                                 break;
                             case 3: // Wheel Left
-                                    //hWheel = 120;
                                 hWheel = (int)(1 * absValue);
                                 mouseWheelX = hWheel;
                                 mouseWheelSync = true;
                                 break;
                             case 4: // Wheel Right
-                                    //hWheel = -120;
                                 hWheel = (int)(-1 * absValue);
                                 mouseWheelX = hWheel;
                                 mouseWheelSync = true;
@@ -1813,8 +1538,6 @@ namespace DS4MapperTest
                                 break;
                         }
 
-                        //fakerInputHandler.PerformMouseWheelEvent(vWheel, hWheel);
-                        //InputMethods.MouseWheel(vWheel, hWheel);
                         actionData.activatedEvent = true;
                     }
                     else if (!pressed)
@@ -1880,8 +1603,6 @@ namespace DS4MapperTest
                                 MouseY = yMotion;
                                 MouseSync = true;
                             }
-                            //xMotion = ((mouseVelocity - tempMouseOffsetX) * timeDelta * absXNorm + (tempMouseOffsetX * timeDelta)) * xSign;
-                            //yMotion = ((mouseVelocity - tempMouseOffsetY) * timeDelta * absYNorm + (tempMouseOffsetY * timeDelta)) * -ySign;
                         }
                     }
 
@@ -1904,25 +1625,21 @@ namespace DS4MapperTest
                             switch (actionData.OutputCode)
                             {
                                 case 1: // Wheel Up
-                                        //vWheel = 120;
                                     vWheel = 1;
                                     mouseWheelY = vWheel;
                                     mouseWheelSync = true;
                                     break;
                                 case 2: // Wheel Down
-                                        //vWheel = -120;
                                     vWheel = -1;
                                     mouseWheelY = vWheel;
                                     mouseWheelSync = true;
                                     break;
                                 case 3: // Wheel Left
-                                        //hWheel = 120;
                                     hWheel = 1;
                                     mouseWheelX = hWheel;
                                     mouseWheelSync = true;
                                     break;
                                 case 4: // Wheel Right
-                                        //hWheel = -120;
                                     hWheel = -1;
                                     mouseWheelX = hWheel;
                                     mouseWheelSync = true;
@@ -1931,8 +1648,6 @@ namespace DS4MapperTest
                                     break;
                             }
 
-                            //fakerInputHandler.PerformMouseWheelEvent(vWheel, hWheel);
-                            //InputMethods.MouseWheel(vWheel, hWheel);
                             actionData.activatedEvent = true;
                         }
                         else if (!pressed)
@@ -2052,15 +1767,12 @@ namespace DS4MapperTest
                                 MouseY = yMotion;
                                 MouseSync = true;
                             }
-                            //xMotion = ((mouseVelocity - tempMouseOffsetX) * timeDelta * absXNorm + (tempMouseOffsetX * timeDelta)) * xSign;
-                            //yMotion = ((mouseVelocity - tempMouseOffsetY) * timeDelta * absYNorm + (tempMouseOffsetY * timeDelta)) * -ySign;
                         }
                     }
 
                     break;
                 case OutputActionData.ActionType.GamepadControl:
                     {
-                        //actionData.activatedEvent = pressed;
                         GamepadFromAxisInput(actionData, outputNorm);
                     }
 
@@ -2146,25 +1858,21 @@ namespace DS4MapperTest
                             switch (actionData.OutputCode)
                             {
                                 case 1: // Wheel Up
-                                        //vWheel = 120;
                                     vWheel = 1;
                                     mouseWheelY = vWheel;
                                     mouseWheelSync = true;
                                     break;
                                 case 2: // Wheel Down
-                                        //vWheel = -120;
                                     vWheel = -1;
                                     mouseWheelY = vWheel;
                                     mouseWheelSync = true;
                                     break;
                                 case 3: // Wheel Left
-                                        //hWheel = 120;
                                     hWheel = 1;
                                     mouseWheelX = hWheel;
                                     mouseWheelSync = true;
                                     break;
                                 case 4: // Wheel Right
-                                        //hWheel = -120;
                                     hWheel = -1;
                                     mouseWheelX = hWheel;
                                     mouseWheelSync = true;
@@ -2173,8 +1881,6 @@ namespace DS4MapperTest
                                     break;
                             }
 
-                            //fakerInputHandler.PerformMouseWheelEvent(vWheel, hWheel);
-                            //InputMethods.MouseWheel(vWheel, hWheel);
                             actionData.activatedEvent = true;
                         }
                         else if (!pressed)
@@ -2242,8 +1948,6 @@ namespace DS4MapperTest
                                 MouseY = yMotion;
                                 MouseSync = true;
                             }
-                            //xMotion = ((mouseVelocity - tempMouseOffsetX) * timeDelta * absXNorm + (tempMouseOffsetX * timeDelta)) * xSign;
-                            //yMotion = ((mouseVelocity - tempMouseOffsetY) * timeDelta * absYNorm + (tempMouseOffsetY * timeDelta)) * -ySign;
                         }
                     }
 
@@ -2272,20 +1976,6 @@ namespace DS4MapperTest
                     }
 
                     break;
-                //case OutputActionData.ActionType.SwitchActionLayer:
-                //    actionData.activatedEvent = pressed;
-                //    if (pressed)
-                //    {
-                //        queuedActionLayer = actionData.ChangeToLayer;
-                //    }
-                //    else
-                //    {
-                //        // Revert to default layer
-                //        queuedActionLayer = 0;
-                //    }
-
-                //    break;
-
                 case OutputActionData.ActionType.SwitchActionLayer:
                     actionData.activatedEvent = pressed;
                     if (pressed)
@@ -2311,12 +2001,10 @@ namespace DS4MapperTest
                 case OutputActionData.ActionType.ApplyActionLayer:
                     OutputActionData.ActionLayerChangeCondition layerApplyCond = actionData.LayerChangeCondition;
                     actionData.activatedEvent = pressed;
-                    //Trace.WriteLine("Change Action Layer {0}", actionData.ChangeToLayer.ToString());
                     if (pressed)
                     {
                         if (layerApplyCond == OutputActionData.ActionLayerChangeCondition.Pressed)
                         {
-                            Trace.WriteLine($"Add Action Layer {actionData.ChangeToLayer}");
                             queuedActionLayer = actionData.ChangeToLayer;
                             applyQueuedActionLayer = true;
                         }
@@ -2334,13 +2022,10 @@ namespace DS4MapperTest
                 case OutputActionData.ActionType.RemoveActionLayer:
                     OutputActionData.ActionLayerChangeCondition layerRemoveCond = actionData.LayerChangeCondition;
                     actionData.activatedEvent = pressed;
-                    //Trace.WriteLine("Remove Action Layer {0}", "0");
                     if (pressed)
                     {
                         if (layerRemoveCond == OutputActionData.ActionLayerChangeCondition.Pressed)
                         {
-                            Trace.WriteLine("Removing Action Layer");
-                            //queuedActionLayer = ActionSet.DEFAULT_ACTION_LAYER_INDEX;
                             queuedActionLayer = actionData.ChangeToLayer;
                             applyQueuedActionLayer = false;
                         }
@@ -2349,9 +2034,6 @@ namespace DS4MapperTest
                     {
                         if (layerRemoveCond == OutputActionData.ActionLayerChangeCondition.Released)
                         {
-                            Trace.WriteLine("Removing Action Layer");
-                            //queuedActionLayer = ActionSet.DEFAULT_ACTION_LAYER_INDEX;
-                            //queuedActionLayer = actionProfile.CurrentActionSet.CurrentActionLayer.Index;
                             queuedActionLayer = actionData.ChangeToLayer;
                             applyQueuedActionLayer = false;
                         }
@@ -2359,14 +2041,10 @@ namespace DS4MapperTest
 
                     break;
                 case OutputActionData.ActionType.HoldActionLayer:
-                    //actionData.activatedEvent = pressed;
-                    //Trace.WriteLine("Remove Action Layer {0}", "0");
                     if (pressed)
                     {
                         if (!actionData.activatedEvent)
-                        //if (!actionData.waitForRelease)
                         {
-                            Trace.WriteLine($"Hold Action Layer {actionData.ChangeToLayer}");
                             actionData.activatedEvent = true;
                             queuedActionLayer = actionData.ChangeToLayer;
                             applyQueuedActionLayer = true;
@@ -2377,13 +2055,9 @@ namespace DS4MapperTest
                     }
                     else if (!pressed)
                     {
-                        //if (actionData.activatedEvent && fullRelease)
                         if (actionData.activatedEvent)
-                        //if (!actionData.skipRelease && actionData.waitForRelease)
                         {
-                            Trace.WriteLine($"Release Action Layer");
                             actionData.activatedEvent = false;
-                            //queuedActionLayer = ActionSet.DEFAULT_ACTION_LAYER_INDEX;
                             queuedActionLayer = actionData.ChangeToLayer;
                             applyQueuedActionLayer = false;
                             actionData.waitForRelease = false;
@@ -2607,9 +2281,6 @@ namespace DS4MapperTest
                 outDS4Report.bSpecial = (byte)(tempSpecial | (frameCounter << 2));
                 outDS4Report.wButtons |= tempDPad.Value;
 
-                //tempDS4.SetButtonsFull(tempButtons);
-                //tempDS4.SetSpecialButtonsFull((byte)tempSpecial);
-                //tempDS4.SetDPadDirection(tempDPad);
             }
 
             outDS4Report.bThumbLX = (byte)((intermediateState.LX >= 0 ? (DS4_STICK_MAX - DS4_STICK_MID) : -(DS4_STICK_MIN - DS4_STICK_MID)) * intermediateState.LX + DS4_STICK_MID);
@@ -2634,6 +2305,20 @@ namespace DS4MapperTest
             intermediateState.PacketCounter = intermediateState.PacketCounter + 1;
         }
 
+        private readonly GyroMotionGravity motionGravity = new GyroMotionGravity();
+
+        // No explicit reset call needed: on a genuine physical disconnect,
+        // BackendManager.Device_Removal tears the Mapper down entirely and a
+        // brand new Mapper (and this field) is constructed when the device is
+        // re-enumerated, so motionGravity already starts clean. The only case
+        // where a single Mapper instance is reused across a reconnect-like
+        // event is the Steam Controller/Triton dongle sync cycle
+        // (SteamControllerReader/SteamControllerTritionReader toggling
+        // device.Synced -> BackendManager.Device_SyncedChanged ->
+        // PrepareSyncedInputDevice -> Mapper.Start()); no existing per-device
+        // gyro state (including GyroCalibration, whose own reset only fires
+        // once per reader thread on its first packet) is reset on that path
+        // either, so there is no existing hook to mirror here.
         public void PopulateStateGyro(ref GyroEventFrame frame)
         {
             intermediateState.GyroYaw = frame.GyroYaw;
@@ -2642,15 +2327,33 @@ namespace DS4MapperTest
             intermediateState.AccelX = frame.AccelX;
             intermediateState.AccelY = frame.AccelY;
             intermediateState.AccelZ = frame.AccelZ;
+
+            // Keep the gravity estimate warm every tick, regardless of whether any
+            // gyro action is currently active. JSM does the same: ProcessMotion runs
+            // unconditionally in the poll loop, so gravity is already converged the
+            // instant the gyro button is pressed.
+            // Each device family reports its sensors in its own convention, so
+            // the conversion is selected per family. DeviceType is already the
+            // discriminator every mapper subclass overrides.
+            GyroMotionAxisAdapter.ToMotionSpace(DeviceType,
+                frame.AngGyroYaw, frame.AngGyroPitch, frame.AngGyroRoll,
+                frame.AccelXG, frame.AccelYG, frame.AccelZG,
+                out double gmGyroX, out double gmGyroY, out double gmGyroZ,
+                out double gmAccelX, out double gmAccelY, out double gmAccelZ);
+
+            motionGravity.Update(gmGyroX, gmGyroY, gmGyroZ,
+                gmAccelX, gmAccelY, gmAccelZ, frame.timeElapsed);
+
+            frame.GravX = motionGravity.Grav.x;
+            frame.GravY = motionGravity.Grav.y;
+            frame.GravZ = motionGravity.Grav.z;
+            frame.GravValid = motionGravity.HasGravity;
         }
 
         public void ProcessActionSetLayerChecks()
         {
             if (queuedActionSet != -1)
             {
-                //Console.WriteLine("CHANGING SET: {0}", queuedActionSet);
-                //actionProfile.CurrentActionSet.ReleaseActions(this);
-                //actionProfile.SwitchSets(queuedActionSet, this);
                 actionProfile.SwitchSets(queuedActionSet, this);
 
                 // Switch to possible new ActionLayer before engaging new actions
@@ -2667,26 +2370,21 @@ namespace DS4MapperTest
                     }
                     else if (!applyQueuedActionLayer)
                     {
-                        //int tempIndex = actionProfile.CurrentActionSet.CurrentActionLayer.Index;
                         int tempIndex = queuedActionLayer;
                         actionProfile.CurrentActionSet.RemovePartialActionLayer(this, tempIndex);
-                        //actionProfile.CurrentActionSet.RemovePartialActionLayer(this, queuedActionLayer);
                     }
 
-                    //actionProfile.CurrentActionSet.SwitchActionLayer(this, queuedActionLayer);
                     queuedActionLayer = -1;
                     applyQueuedActionLayer = false;
                     switchQueuedActionLayer = false;
                 }
 
                 // Put new actions into an active state
-                //PrepareActionData(ref currentMapperState);
                 queuedActionSet = -1;
             }
             // Check if only an ActionLayer change is happening
             else if (queuedActionLayer != -1)
             {
-                Trace.WriteLine($"Going to Action Layer {queuedActionLayer}");
                 if (switchQueuedActionLayer)
                 {
                     actionProfile.CurrentActionSet.SwitchActionLayer(this, queuedActionLayer);
@@ -2697,16 +2395,12 @@ namespace DS4MapperTest
                 }
                 else if (!applyQueuedActionLayer)
                 {
-                    //int tempIndex = actionProfile.CurrentActionSet.CurrentActionLayer.Index;
                     int tempIndex = queuedActionLayer;
-                    //actionProfile.CurrentActionSet.RemovePartialActionLayer(this, queuedActionLayer);
                     actionProfile.CurrentActionSet.RemovePartialActionLayer(this, tempIndex);
                 }
 
-                //actionProfile.CurrentActionSet.SwitchActionLayer(this, queuedActionLayer);
 
                 // Put new actions into an active state
-                //PrepareActionData(ref currentMapperState);
                 queuedActionLayer = EMPTY_QUEUED_ACTION_LAYER;
                 applyQueuedActionLayer = false;
                 switchQueuedActionLayer = false;
@@ -2756,11 +2450,9 @@ namespace DS4MapperTest
 
             if (mouseSync)
             {
-                //mouseReport.ResetMousePos();
 
                 if (mouseX != 0.0 || mouseY != 0.0)
                 {
-                    //Console.WriteLine("MOVE: {0}, {1}", (int)mouseX, (int)mouseY);
                     GenerateMouseMoveEvent();
                 }
                 else
@@ -2768,8 +2460,6 @@ namespace DS4MapperTest
                     // Probably not needed here. Leave as a temporary precaution
                     mouseXRemainder = mouseYRemainder = 0.0;
 
-                    //filterX.Filter(0.0, currentRate); // Smooth on output
-                    //filterY.Filter(0.0, currentRate); // Smooth on output
                 }
 
                 mouseSync = false;
@@ -2785,13 +2475,6 @@ namespace DS4MapperTest
             if (absMouseSync)
             {
                 double outX = absMouseX, outY = absMouseY;
-                //if (!appGlobal.absUseAllMonitors)
-                //{
-                //    double tempX = outX, tempY = outY;
-                //    TranslateCoorToAbsDisplay(tempX, tempY, ref appGlobal.absDisplayBounds,
-                //        ref appGlobal.fullDesktopBounds, out outX, out outY);
-                //}
-
                 eventInputHandler.MoveAbsoluteMouse(outX, outY);
                 absMouseSync = false;
             }
@@ -2804,10 +2487,8 @@ namespace DS4MapperTest
             }
 
             SyncMouseButtons();
-            //fakerInputDev.UpdateRelativeMouse(mouseReport);
 
             SyncKeyboard();
-            //fakerInputDev.UpdateKeyboard(keyboardReport);
             eventInputHandler.Sync();
 
             if (gamepadSync && intermediateState.Dirty)
@@ -2822,7 +2503,6 @@ namespace DS4MapperTest
                     else if (outputControlType == OutputContType.DualShock4)
                     {
                         PopulateDualShock4();
-                        //outputController?.SubmitReport();
                     }
                 }
 
@@ -2838,7 +2518,6 @@ namespace DS4MapperTest
             if (hasInputEvts)
             {
                 using (WriteLocker locker = new WriteLocker(eventQueueLocker))
-                //lock (eventQueueLock)
                 {
                     Action tempAct = null;
                     for (int actInd = 0, actLen = eventQueue.Count;
@@ -2926,7 +2605,6 @@ namespace DS4MapperTest
         /// <param name="tempAct">Action to enqueue to Queue</param>
         public void QueueEvent(Action tempAct)
         {
-            //lock(eventQueueLock)
             using (WriteLocker locker = new WriteLocker(eventQueueLocker))
             {
                 eventQueue.Enqueue(tempAct);
