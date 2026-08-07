@@ -2111,6 +2111,23 @@ namespace DS4MapperTest
                     }
 
                     break;
+                case OutputActionData.ActionType.RecalibrateGyro:
+                    {
+                        if (pressed)
+                        {
+                            if (!actionData.activatedEvent)
+                            {
+                                BaseReader?.RequestGyroCalibration();
+                                actionData.activatedEvent = true;
+                            }
+                        }
+                        else
+                        {
+                            actionData.activatedEvent = false;
+                        }
+                    }
+
+                    break;
                 default:
                     break;
             }
